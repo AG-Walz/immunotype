@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import torch
 from torch_geometric.data import HeteroData
-from constants import TOKEN_VOCABULARY
+from .constants import TOKEN_VOCABULARY
 import itertools
 
 
@@ -54,3 +54,24 @@ def load_weights(model, gnn_weight_path):
     state_dict = torch.load(gnn_weight_path, weights_only=True, map_location=torch.device('cpu'))
     model.load_state_dict(state_dict, strict=True)
     return model
+
+
+def create_typing_summary(typing_df):
+    """
+    Create a typing summary DataFrame in the format: sample, alleles
+    with semicolon-separated alleles per sample.
+    
+    Args:
+        typing_df: DataFrame with columns ['sample', 'locus', 'allele']
+        
+    Returns:
+        DataFrame with columns ['sample', 'alleles']
+    """
+    if len(typing_df) == 0:
+        return pd.DataFrame(columns=['sample', 'alleles'])
+    
+    summary = typing_df.groupby('sample')['allele'].apply(
+        lambda x: ';'.join(sorted(x.values))
+    ).reset_index()
+    summary.columns = ['sample', 'alleles']
+    return summary
