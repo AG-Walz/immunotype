@@ -45,7 +45,7 @@ AMINO_ACIDS = np.array(
 SEQUENCE_TOKENS = np.array(["[CLS]", "[SEP]", "[MASK]"])
 PLACEHOLDERS = np.array(["HLA-A*homozygous", "HLA-B*homozygous", "HLA-C*homozygous"])
 TOKENS = np.concatenate([SEQUENCE_TOKENS, AMINO_ACIDS, PLACEHOLDERS])
-TOKEN_VOCABULARY = dict(zip(TOKENS, range(1, len(TOKENS) + 1)))
+TOKEN_VOCABULARY = dict(zip(TOKENS, range(1, len(TOKENS) + 1), strict=True))
 
 
 LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.425, "B": 0.3, "C": 0.4}

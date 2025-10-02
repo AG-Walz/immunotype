@@ -199,7 +199,7 @@ class GNN(Module):
             x_dict[nodes] = self.encoder[nodes][1](x)  # linear
 
         # conv
-        for bn, conv in zip(self.bn_conv[:-1], self.conv):
+        for bn, conv in zip(self.bn_conv[:-1], self.conv, strict=True):
             x_res = x_dict.copy()
             x_dict = {k: self.act(bn[k](v)) for k, v in x_dict.items()}
             x_dict = conv(x_dict, edge_index_dict)
