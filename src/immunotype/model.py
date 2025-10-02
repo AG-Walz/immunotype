@@ -1,15 +1,26 @@
-import torch.nn.functional as F
-from torch.nn import *
-import torch
 import math
-from torch_geometric.nn import BatchNorm, TransformerConv, HeteroConv
+
+import torch
+import torch.nn.functional as F
+from torch.nn import Embedding
+from torch.nn import LayerNorm
+from torch.nn import Linear
+from torch.nn import Module
+from torch.nn import ModuleDict
+from torch.nn import ModuleList
+from torch.nn import Parameter
+from torch.nn import TransformerEncoder
+from torch.nn import TransformerEncoderLayer
+from torch_geometric.nn import BatchNorm
+from torch_geometric.nn import HeteroConv
+from torch_geometric.nn import TransformerConv
 from torch_geometric.utils import softmax
 
 
 class PositionalEncoding(Module):
     # adapted from https://pytorch.org/tutorials/beginner/transformer_tutorial.html
     def __init__(self, d_model, max_len=5000):
-        super(PositionalEncoding, self).__init__()
+        super().__init__()
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
@@ -78,7 +89,7 @@ class SequenceEncoder(Module):
             n_layers,
             dropout=0.1
     ):
-        super(SequenceEncoder, self).__init__()
+        super().__init__()
         encoder_layer = TransformerEncoderLayer(
             d_model=embedding_dim,
             nhead=n_heads,
@@ -117,7 +128,7 @@ class GNN(Module):
             dropout=0.1,
             act=F.leaky_relu
     ):
-        super(GNN, self).__init__()
+        super().__init__()
 
         self.act = act
 

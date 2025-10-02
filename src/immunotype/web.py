@@ -14,22 +14,19 @@ The interface includes:
 
 Usage:
     python -m immunotype.web  # Launch directly
-    
+
 For production deployment, use:
     python -m immunotype.server
 """
 
-import itertools
-import numpy as np
-import torch
-from torch_geometric.loader import DataLoader
-from tqdm import tqdm
-from .model import GNN
-import gradio as gr
-import seaborn as sns
-from .immunotype import predict
-import pandas as pd
 from pathlib import Path
+
+import gradio as gr
+import pandas as pd
+import seaborn as sns
+import torch
+
+from .immunotype import predict
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
@@ -100,7 +97,7 @@ def create_interface():
     with gr.Blocks(title="immunotype", theme=gr.themes.Soft()) as demo:
         gr.Markdown("# 🧬 immunotype")
         gr.Markdown("Peptide-based HLA typing from immunopeptidomics data")
-        
+
         with gr.Tab("Prediction"):
             with gr.Row():
                 with gr.Column(scale=2):
@@ -139,7 +136,7 @@ def create_interface():
                         )
 
                     submit_button = gr.Button("Submit", variant="primary")
-                    
+
                 with gr.Column(scale=4):
                     typing_output = gr.HighlightedText(
                         label="Typing",
@@ -167,28 +164,27 @@ def create_interface():
             peptide_file_input.upload(update_peptide_input, inputs=peptide_file_input, outputs=peptide_input)
             allele_file_input.upload(update_allele_input, inputs=allele_file_input, outputs=allele_input)
             col_selector.change(sort_table, inputs=col_selector, outputs=typing_probabilities)
-
         with gr.Tab("Help"):
             gr.Markdown("""
             ## 📚 Tutorial and Resources
-            
+
             ### Usage
             1. **Input peptides**: Enter peptide sequences separated by newlines, or upload a file
-            2. **Configure alleles**: Use the default set or provide your own HLA alleles
-            3. **Adjust settings**: Modify batch size if needed for performance tuning
+            2. **Select typing method**: Choose between automatic typing or input known HLA alleles
+            3. **Optional**: Upload peptide probabilities if known
             4. **Submit**: Click submit to run the prediction
             5. **View results**: See predicted typing and download detailed probabilities
-            
+
             ### Input Formats
             - **Peptides**: One peptide sequence per line (e.g., `ALDGRETD`)
             - **HLA alleles**: One allele per line (e.g., `HLA-A*01:01`)
             - **Files**: TSV/CSV files with peptide sequences in the first column
-            
+
             ### Output
             - **Typing**: Most likely HLA alleles for your sample
             - **Probabilities**: Detailed probability scores for all tested alleles
             - **CSV Download**: Full results table for further analysis
-            
+
             ### Citation
             If you use immunotype in your research, please cite our paper.
             """)

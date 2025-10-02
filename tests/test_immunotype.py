@@ -2,12 +2,15 @@
 Tests for the core immunotype functionality.
 """
 
-import pytest
-import pandas as pd
-import numpy as np
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
+from unittest.mock import patch
 
-from immunotype.immunotype import predict, prepare_data, predict_lookup
+import pandas as pd
+import pytest
+
+from immunotype.immunotype import predict
+from immunotype.immunotype import predict_lookup
+from immunotype.immunotype import prepare_data
 
 
 class TestImmunotype:
@@ -21,11 +24,11 @@ class TestImmunotype:
             'allele': ['HLA-A*02:01', 'HLA-B*07:02', 'HLA-A*02:01'],
             'locus': ['A', 'B', 'A']
         })
-        
+
         # Mock the global lookup_db
         with patch('immunotype.immunotype.lookup_db', mock_lookup_db):
             result = predict_lookup(sample_peptides, sample_alleles)
-            
+
         assert isinstance(result, pd.DataFrame)
         assert 'allele' in result.columns
         assert 'probability' in result.columns
@@ -39,7 +42,7 @@ class TestImmunotype:
             'allele': ['HLA-A*02:01', 'HLA-B*07:02', 'HLA-A*02:01'],
             'locus': ['A', 'B', 'A']
         })
-        
+
         with patch('immunotype.immunotype.lookup_db', mock_lookup_db):
             pred_df, typing = predict(
                 sample_peptides,
@@ -47,7 +50,7 @@ class TestImmunotype:
                 use_gnn=False,
                 use_lookup=True
             )
-        
+
         assert isinstance(pred_df, pd.DataFrame)
         assert isinstance(typing, pd.DataFrame)
         assert len(pred_df) > 0
@@ -71,26 +74,26 @@ class TestImmunotype:
             'allele': ['HLA-A*02:01'],
             'locus': ['A']
         })
-        
+
         mock_read_csv = MagicMock(return_value=mock_lookup_db)
         monkeypatch.setattr("pandas.read_csv", mock_read_csv)
-        
+
         prepare_data(use_gnn=False, use_lookup=True)
-        
+
         # Should not raise any errors
         assert True
 
     def test_predict_empty_peptide_list(self, sample_alleles):
         """Test prediction with empty peptide list."""
         empty_peptides = pd.DataFrame(columns=['peptide', 'sample'])
-        
+
         # Mock lookup database
         mock_lookup_db = pd.DataFrame({
             'peptide': ['ALDGRETD'],
             'allele': ['HLA-A*02:01'],
             'locus': ['A']
         })
-        
+
         with patch('immunotype.immunotype.lookup_db', mock_lookup_db):
             pred_df, typing = predict(
                 empty_peptides,
@@ -98,7 +101,7 @@ class TestImmunotype:
                 use_gnn=False,
                 use_lookup=True
             )
-        
+
         assert isinstance(pred_df, pd.DataFrame)
         assert isinstance(typing, pd.DataFrame)
 
@@ -108,13 +111,13 @@ class TestImmunotype:
             'peptide': ['ALDGRETD', 'ASDSGKYL', 'AVDPTSGQ'],
             'sample': ['sample1', 'sample2', 'sample1']
         })
-        
+
         mock_lookup_db = pd.DataFrame({
             'peptide': ['ALDGRETD', 'ASDSGKYL', 'AVDPTSGQ'],
             'allele': ['HLA-A*02:01', 'HLA-B*07:02', 'HLA-A*02:01'],
             'locus': ['A', 'B', 'A']
         })
-        
+
         with patch('immunotype.immunotype.lookup_db', mock_lookup_db):
             pred_df, typing = predict(
                 multi_sample_peptides,
@@ -122,7 +125,7 @@ class TestImmunotype:
                 use_gnn=False,
                 use_lookup=True
             )
-        
+
         assert isinstance(pred_df, pd.DataFrame)
         assert isinstance(typing, pd.DataFrame)
         # Should have results for both samples

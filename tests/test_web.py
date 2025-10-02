@@ -2,11 +2,14 @@
 Tests for the web application.
 """
 
-import pytest
-import pandas as pd
-from unittest.mock import patch, MagicMock
 
-from immunotype.web import create_interface, submit, update_peptide_input, update_allele_input
+import pandas as pd
+import pytest
+
+from immunotype.web import create_interface
+from immunotype.web import submit
+from immunotype.web import update_allele_input
+from immunotype.web import update_peptide_input
 
 
 class TestWebApp:
@@ -31,23 +34,23 @@ class TestWebApp:
             'allele': ['HLA-A*02:01', 'HLA-B*07:02'],
             'locus': ['A', 'B']
         })
-        
+
         def mock_predict(*args, **kwargs):
             return mock_pred_df, mock_typing
-        
+
         monkeypatch.setattr("immunotype.web.predict", mock_predict)
-        
+
         # Test the submit function
         peptides = "ALDGRETD\nASDSGKYL"
         alleles = "HLA-A*02:01\nHLA-B*07:02"
         batch_size = 1000
-        
+
         result = submit(peptides, alleles, batch_size)
-        
+
         # Should return a tuple with typing results, probability output, and file update
         assert isinstance(result, tuple)
         assert len(result) == 3
-        
+
         # First element should be typing results (as numpy array)
         typing_result = result[0]
         assert len(typing_result) > 0
@@ -58,9 +61,9 @@ class TestWebApp:
         peptide_file = tmp_path / "test_peptides.csv"
         test_peptides = pd.DataFrame(['ALDGRETD', 'ASDSGKYL'])
         test_peptides.to_csv(peptide_file, index=False, header=False)
-        
+
         result = update_peptide_input(str(peptide_file))
-        
+
         # Should return a Gradio update object
         assert hasattr(result, 'value') or 'value' in result
         if hasattr(result, 'value'):
@@ -74,9 +77,9 @@ class TestWebApp:
         allele_file = tmp_path / "test_alleles.csv"
         test_alleles = pd.DataFrame(['HLA-A*02:01', 'HLA-B*07:02'])
         test_alleles.to_csv(allele_file, index=False, header=False)
-        
+
         result = update_allele_input(str(allele_file))
-        
+
         # Should return a Gradio update object
         assert hasattr(result, 'value') or 'value' in result
         if hasattr(result, 'value'):
@@ -89,13 +92,13 @@ class TestWebApp:
         # Mock predict to raise an exception
         def mock_predict(*args, **kwargs):
             raise ValueError("Test error")
-        
+
         monkeypatch.setattr("immunotype.web.predict", mock_predict)
-        
+
         peptides = "ALDGRETD"
         alleles = "HLA-A*02:01"
         batch_size = 1000
-        
+
         # This should not crash the application
         with pytest.raises(ValueError):
             submit(peptides, alleles, batch_size)
@@ -111,7 +114,7 @@ class TestWebApp:
             'allele': ['HLA-A*02:01'],
             'locus': ['A']
         })
-        
+
         def mock_predict(peptide_df, *args, **kwargs):
             # Check that peptides were parsed correctly
             expected_peptides = ['ALDGRETD', 'ASDSGKYL', 'AVDPTSGQ']
@@ -119,12 +122,12 @@ class TestWebApp:
             assert actual_peptides == expected_peptides
             assert all(peptide_df['sample'] == 0)
             return mock_pred_df, mock_typing
-        
+
         monkeypatch.setattr("immunotype.web.predict", mock_predict)
-        
+
         # Test with newline-separated peptides
         peptides = "ALDGRETD\nASDSGKYL\nAVDPTSGQ"
         alleles = "HLA-A*02:01"
         batch_size = 1000
-        
+
         submit(peptides, alleles, batch_size)

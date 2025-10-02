@@ -1,11 +1,14 @@
+import sys
 import warnings
+from pathlib import Path
+
 import pandas as pd
 import rich_click as click
-import sys
+
+from .constants import ASCII_BANNER
+from .constants import __authors__
 from .immunotype import predict
-from .constants import ASCII_BANNER, __authors__
 from .utils import create_typing_summary
-from pathlib import Path
 
 # Import version from package
 try:
@@ -40,55 +43,55 @@ def show_banner():
     epilog="For more information, visit: https://github.com/immunotype/immunotype"
 )
 @click.argument(
-    "input", 
+    "input",
     type=click.Path(exists=True, path_type=Path),
     help="TSV input file. Either a single column of peptides or two columns with sample IDs and peptides.",
 )
 @click.argument(
-    "output", 
-    type=click.Path(path_type=Path), 
+    "output",
+    type=click.Path(path_type=Path),
     help="Path to save the typing output (format depends on input type)."
 )
 @click.option(
-    "--hla-input", 
-    type=click.Path(path_type=Path), 
-    default=PACKAGE_ROOT / "data" / "selected_alleles.csv", 
+    "--hla-input",
+    type=click.Path(path_type=Path),
+    default=PACKAGE_ROOT / "data" / "selected_alleles.csv",
     help="Path to the HLA input file containing alleles to consider.",
     show_default=True
 )
 @click.option(
-    "--out_probs", 
+    "--out_probs",
     type=click.Path(path_type=Path),
     help="Save detailed HLA probabilities to specified TSV file."
 )
 @click.option(
-    "--batch-size", 
-    default=1, 
+    "--batch-size",
+    default=1,
     type=int,
     help="Number of samples to predict simultaneously.",
     show_default=True
 )
 @click.option(
-    "--max-n-peptides", 
-    default=10_000, 
+    "--max-n-peptides",
+    default=10_000,
     type=int,
     help="Maximum number of peptides to predict at once.",
     show_default=True
 )
 @click.option(
-    "--no-gnn", 
-    is_flag=True, 
+    "--no-gnn",
+    is_flag=True,
     help="Disable the pre-trained GNN model."
 )
 @click.option(
-    "--no-lookup", 
-    is_flag=True, 
+    "--no-lookup",
+    is_flag=True,
     help="Disable the lookup table."
 )
 @click.option(
-    "--gnn-weight-path", 
+    "--gnn-weight-path",
     type=click.Path(path_type=Path),
-    default=PACKAGE_ROOT / "weights" / "gnn_model_weights.pth", 
+    default=PACKAGE_ROOT / "weights" / "gnn_model_weights.pth",
     help="Path to GNN model weights file.",
     show_default=True
 )
@@ -107,24 +110,24 @@ def main(
 ):
     """
     Predict HLA typing from peptide sequences using immunotype.
-    
+
     PEPTIDE_FILE should contain peptide sequences, either as a single column
     or with headers including 'peptide' and optionally 'sample' columns.
     """
-    
+
     # Show the ASCII banner
     show_banner()
-    
+
     # Validate that at least one method is enabled
     if no_gnn and no_lookup:
         click.secho("❌ Error: Cannot disable both GNN and lookup methods!", fg="red", err=True)
         raise click.Abort()
-    
+
     # Load and process peptide data
     try:
         # First, try to read the file to determine its structure
         raw_df = pd.read_csv(input, sep="\t", header=None)
-        
+
         # Determine input type based on structure
         if raw_df.shape[1] == 1:
             # Single column peptide list (like peptide_list.tsv)
@@ -146,13 +149,13 @@ def main(
             click.secho(f"✅ Loaded {len(peptide_df)} peptides from {len(peptide_df['sample'].unique())} samples from {input}", fg="green")
         else:
             raise ValueError(f"Unsupported input format. Expected 1 or 2 columns, got {raw_df.shape[1]}")
-        
+
         peptide_df['sample'] = peptide_df["sample"].astype(str)
-        
+
     except Exception as e:
         click.secho(f"❌ Error loading peptide file: {e}", fg="red", err=True)
         raise click.Abort()
-    
+
     # Load HLA alleles
     try:
         selected_alleles = pd.read_csv(hla_input, header=None)[0].values
@@ -194,7 +197,7 @@ def main(
         with open(output, 'w') as f:
             f.write(alleles + "\n")
         click.secho(f"💾 Typing saved to {output}", fg="green")
-        
+
     if out_probs:
         # Save detailed predictions (like example_prediction.tsv)
         pred_df.to_csv(out_probs, sep='\t', index=False)

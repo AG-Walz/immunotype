@@ -1,13 +1,18 @@
-import itertools
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import torch
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
+
+from .constants import ENSEMBLE_MODEL_WEIGHTS
+from .constants import LOOKUP_HOMOZYGOUS_THRESHOLDS
+from .constants import PLACEHOLDERS
 from .model import GNN
-from .constants import *
-from .utils import load_weights, get_hetero_data, tokenize
-from pathlib import Path
+from .utils import get_hetero_data
+from .utils import load_weights
+from .utils import tokenize
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
@@ -21,7 +26,7 @@ lookup_db = None
 def predict_lookup(peptide_df, selected_alleles):
     lookup_score_df = pd.merge(lookup_db.loc[lookup_db['allele'].isin(selected_alleles)], peptide_df, how='inner')
     index = pd.MultiIndex.from_tuples(
-        [[s, allele[4], allele] for s in peptide_df['sample'].unique() for allele in selected_alleles], 
+        [[s, allele[4], allele] for s in peptide_df['sample'].unique() for allele in selected_alleles],
         names=['sample', 'locus', 'allele']
         )
     lookup_score_df = lookup_score_df[['sample', 'locus', 'allele']].value_counts().reset_index()
@@ -39,7 +44,7 @@ def predict_lookup(peptide_df, selected_alleles):
                 lookup_score_df.loc[sample, locus, p] = (
                     scores.nlargest(2).values[-1] <= scores.max() * LOOKUP_HOMOZYGOUS_THRESHOLDS[locus]
                     ) * 1
-    
+
     lookup_score_df = lookup_score_df.reset_index().drop('count', axis=1)
     return lookup_score_df
 
@@ -74,20 +79,20 @@ def prepare_data(
 ):
     if gnn_weight_path is None:
         gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pth"
-    
+
     if use_gnn:
         global model, mhc_features
-        
+
         # Check if weights file exists
         if not gnn_weight_path.exists():
             import warnings
             warnings.warn(
                 f"GNN weights file not found at {gnn_weight_path}. "
                 "Falling back to lookup-only mode. To suppress this warning, use --no-gnn flag.",
-                UserWarning
+                stacklevel=2
             )
             return False  # Indicate GNN couldn't be loaded
-            
+
         try:
             model = GNN()
             model = load_weights(model, gnn_weight_path)
@@ -99,14 +104,14 @@ def prepare_data(
             warnings.warn(
                 f"Failed to load GNN model: {e}. Falling back to lookup-only mode. "
                 "To suppress this warning, use --no-gnn flag.",
-                UserWarning
+                stacklevel=2
             )
             return False  # Indicate GNN couldn't be loaded
 
     if use_lookup:
         global lookup_db
         lookup_db = pd.read_csv(PACKAGE_ROOT / 'data' / 'lookup_db.csv')
-    
+
     return True  # Indicate success
 
 
@@ -121,7 +126,7 @@ def predict(
 ):
     if not use_gnn and not use_lookup:
         raise ValueError('Must use GNN or lookup or both')
-    
+
     if gnn_weight_path is None:
         gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pth"
 
@@ -129,7 +134,7 @@ def predict(
     gnn_loaded = True
     if (use_gnn and model is None) or (use_lookup and lookup_db is None):
         gnn_loaded = prepare_data(use_gnn, use_lookup, gnn_weight_path)
-        
+
     # If GNN was requested but couldn't be loaded, fall back to lookup only
     if use_gnn and not gnn_loaded:
         use_gnn = False
@@ -163,7 +168,7 @@ def predict(
         pred_df = list(probabilities.values())[0]
 
     pred_df = pred_df.sort_values(['sample', 'locus', 'allele'])
-    
+
     # typing
     typing = pred_df.loc[pred_df['probability'] > 0]
     if len(typing) > 0:
@@ -171,7 +176,7 @@ def predict(
             lambda x: x.sort_values(by='probability')['allele'].iloc[-2:],
             include_groups=False
         ).reset_index()
-        
+
         # Drop level_2 column if it exists
         if 'level_2' in typing.columns:
             typing = typing.drop('level_2', axis=1)

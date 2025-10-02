@@ -2,11 +2,10 @@
 Test configuration and fixtures for immunotype.
 """
 
-import pytest
-import pandas as pd
 from pathlib import Path
-import tempfile
-import os
+
+import pandas as pd
+import pytest
 
 # Test data directory
 TEST_DATA_DIR = Path(__file__).parent / "fixtures"
@@ -59,13 +58,13 @@ def mock_model_weights(tmp_path):
 
 class MockModel:
     """Mock GNN model for testing."""
-    
+
     def eval(self):
         pass
-    
+
     def __call__(self, batch):
-        import torch
         import numpy as np
+        import torch
         # Return mock predictions
         batch_size = len(batch.sample) if hasattr(batch, 'sample') else 1
         num_alleles = 3  # Mock number of alleles
@@ -76,9 +75,9 @@ class MockModel:
 def mock_gnn_model(monkeypatch):
     """Mock the GNN model for testing."""
     mock_model = MockModel()
-    
+
     def mock_load_weights(model, path):
         return mock_model
-    
+
     monkeypatch.setattr("immunotype.utils.load_weights", mock_load_weights)
     return mock_model

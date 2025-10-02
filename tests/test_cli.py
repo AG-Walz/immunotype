@@ -2,10 +2,8 @@
 Tests for the CLI module.
 """
 
-import pytest
-from click.testing import CliRunner
 import pandas as pd
-from pathlib import Path
+from click.testing import CliRunner
 
 from immunotype.cli import main
 
@@ -36,9 +34,9 @@ class TestCLI:
                 'allele': ['HLA-A*02:01', 'HLA-B*07:02']
             })
             return pred_df, typing
-        
+
         monkeypatch.setattr("immunotype.cli.predict", mock_predict)
-        
+
         runner = CliRunner()
         result = runner.invoke(main, [
             str(peptide_file),
@@ -46,7 +44,7 @@ class TestCLI:
             '--hla-input', str(allele_file),
             '--no-gnn'  # Use only lookup to speed up testing
         ])
-        
+
         assert result.exit_code == 0
         assert 'Predicted HLA typing' in result.output
         assert output_file.exists()
@@ -75,9 +73,9 @@ class TestCLI:
         def mock_predict(*args, **kwargs):
             assert kwargs.get('batch_size') == 5
             return pd.DataFrame(), pd.DataFrame({'sample': [], 'allele': []})
-        
+
         monkeypatch.setattr("immunotype.cli.predict", mock_predict)
-        
+
         runner = CliRunner()
         result = runner.invoke(main, [
             str(peptide_file),
@@ -93,9 +91,9 @@ class TestCLI:
         def mock_predict(*args, **kwargs):
             assert kwargs.get('max_n_peptides') == 5000
             return pd.DataFrame(), pd.DataFrame({'sample': [], 'allele': []})
-        
+
         monkeypatch.setattr("immunotype.cli.predict", mock_predict)
-        
+
         runner = CliRunner()
         result = runner.invoke(main, [
             str(peptide_file),

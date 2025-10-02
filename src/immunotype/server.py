@@ -9,7 +9,7 @@ Usage:
     # Development/production server with Gradio
     python -m immunotype.server
     python -c "from immunotype.server import launch; launch()"
-    
+
     # ASGI server for container deployments (experimental)
     uvicorn immunotype.server:asgi_app --host 0.0.0.0 --port 8000
 """
@@ -22,7 +22,7 @@ def create_app():
 def launch(host="0.0.0.0", port=8000, share=False, **kwargs):
     """
     Launch the immunotype web server using Gradio's built-in server.
-    
+
     Args:
         host: Host to bind to (default: 0.0.0.0)
         port: Port to bind to (default: 8000)
@@ -63,7 +63,7 @@ main = launch
 
 if __name__ == "__main__":
     import rich_click as click
-    
+
     @click.command()
     @click.option(
         "--host",
@@ -86,5 +86,5 @@ if __name__ == "__main__":
     def main_cli(host, port, share):
         """Launch the immunotype web server."""
         launch(host=host, port=port, share=share)
-    
+
     main_cli()
