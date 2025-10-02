@@ -27,31 +27,23 @@ class PositionalEncoding(Module):
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0)
-        self.register_buffer('pe', pe)
+        self.register_buffer("pe", pe)
 
     def forward(self, x):
-        x = x + self.pe[:, :x.size(1), :]
+        x = x + self.pe[:, : x.size(1), :]
         return x
 
 
 class GumbelTransformerConv(TransformerConv):
-    def __init__(
-            self,
-            in_channels,
-            out_channels,
-            heads,
-            **kwargs
-    ):
+    def __init__(self, in_channels, out_channels, heads, **kwargs):
         super().__init__(in_channels, out_channels, heads=heads, **kwargs)
         self.tau = Parameter(torch.rand(1, 1))
-        self.gumbel_alpha = 1.
+        self.gumbel_alpha = 1.0
 
     def message(self, query_i, key_j, value_j, edge_attr, index, ptr, size_i):
-
         if self.lin_edge is not None:
             assert edge_attr is not None
-            edge_attr = self.lin_edge(edge_attr).view(-1, self.heads,
-                                                      self.out_channels)
+            edge_attr = self.lin_edge(edge_attr).view(-1, self.heads, self.out_channels)
             key_j = key_j + edge_attr
 
         alpha = (query_i * key_j).sum(dim=-1) / math.sqrt(self.out_channels)
@@ -81,21 +73,14 @@ class GumbelTransformerConv(TransformerConv):
 
 
 class SequenceEncoder(Module):
-    def __init__(
-            self,
-            embedding_dim,
-            dim_ff,
-            n_heads,
-            n_layers,
-            dropout=0.1
-    ):
+    def __init__(self, embedding_dim, dim_ff, n_heads, n_layers, dropout=0.1):
         super().__init__()
         encoder_layer = TransformerEncoderLayer(
             d_model=embedding_dim,
             nhead=n_heads,
             batch_first=True,
             dim_feedforward=dim_ff,
-            dropout=dropout
+            dropout=dropout,
         )
 
         self.encoder = TransformerEncoder(
@@ -113,20 +98,20 @@ class SequenceEncoder(Module):
 
 class GNN(Module):
     def __init__(
-            self,
-            vocab_size=45,
-            embedding_dim=128,
-            dim_ff_enc_pep=128,
-            n_heads_enc_pep=8,
-            n_layers_enc_pep=6,
-            dim_ff_enc_mhc=1024,
-            n_heads_enc_mhc=8,
-            n_layers_enc_mhc=6,
-            n_heads_conv=8,
-            n_layers_conv=2,
-            dim_out_conv=32,
-            dropout=0.1,
-            act=F.leaky_relu
+        self,
+        vocab_size=45,
+        embedding_dim=128,
+        dim_ff_enc_pep=128,
+        n_heads_enc_pep=8,
+        n_layers_enc_pep=6,
+        dim_ff_enc_mhc=1024,
+        n_heads_enc_mhc=8,
+        n_layers_enc_mhc=6,
+        n_heads_conv=8,
+        n_layers_conv=2,
+        dim_out_conv=32,
+        dropout=0.1,
+        act=F.leaky_relu,
     ):
         super().__init__()
 
@@ -138,32 +123,65 @@ class GNN(Module):
         self.positional_encoding = PositionalEncoding(embedding_dim)
 
         # Peptide
-        self.encoder = ModuleDict({
-            'peptide': ModuleList([
-                SequenceEncoder(embedding_dim, dim_ff_enc_pep, n_heads_enc_pep, n_layers_enc_pep, dropout),
-                Linear(embedding_dim, dim)
-            ]),
-            'mhc': ModuleList([
-                SequenceEncoder(embedding_dim, dim_ff_enc_mhc, n_heads_enc_mhc, n_layers_enc_mhc, dropout),
-                Linear(embedding_dim, dim * 2)
-            ])
-        })
-        self.bn_conv = ModuleList([ModuleDict({
-            'peptide': BatchNorm(dim, allow_single_element=True),
-            'mhc': BatchNorm(dim * 2, allow_single_element=True),
-        }) for _ in range(n_layers_conv + 1)])
+        self.encoder = ModuleDict(
+            {
+                "peptide": ModuleList(
+                    [
+                        SequenceEncoder(
+                            embedding_dim,
+                            dim_ff_enc_pep,
+                            n_heads_enc_pep,
+                            n_layers_enc_pep,
+                            dropout,
+                        ),
+                        Linear(embedding_dim, dim),
+                    ]
+                ),
+                "mhc": ModuleList(
+                    [
+                        SequenceEncoder(
+                            embedding_dim,
+                            dim_ff_enc_mhc,
+                            n_heads_enc_mhc,
+                            n_layers_enc_mhc,
+                            dropout,
+                        ),
+                        Linear(embedding_dim, dim * 2),
+                    ]
+                ),
+            }
+        )
+        self.bn_conv = ModuleList(
+            [
+                ModuleDict(
+                    {
+                        "peptide": BatchNorm(dim, allow_single_element=True),
+                        "mhc": BatchNorm(dim * 2, allow_single_element=True),
+                    }
+                )
+                for _ in range(n_layers_conv + 1)
+            ]
+        )
 
-        self.conv = ModuleList([
-            HeteroConv({
-                ('peptide', 'determines', 'mhc'): GumbelTransformerConv((dim, dim * 2), dim_out_conv,
-                                                                        heads=n_heads_conv, dropout=dropout),
-                ('mhc', 'influences', 'mhc'): GumbelTransformerConv(dim * 2, dim_out_conv, heads=n_heads_conv,
-                                                              dropout=dropout),
-                ('peptide', 'influences', 'peptide'): TransformerConv(dim, dim_out_conv, heads=n_heads_conv,
-                                                                      dropout=dropout),
-            }, aggr='cat')
-            for _ in range(n_layers_conv)
-        ])
+        self.conv = ModuleList(
+            [
+                HeteroConv(
+                    {
+                        ("peptide", "determines", "mhc"): GumbelTransformerConv(
+                            (dim, dim * 2), dim_out_conv, heads=n_heads_conv, dropout=dropout
+                        ),
+                        ("mhc", "influences", "mhc"): GumbelTransformerConv(
+                            dim * 2, dim_out_conv, heads=n_heads_conv, dropout=dropout
+                        ),
+                        ("peptide", "influences", "peptide"): TransformerConv(
+                            dim, dim_out_conv, heads=n_heads_conv, dropout=dropout
+                        ),
+                    },
+                    aggr="cat",
+                )
+                for _ in range(n_layers_conv)
+            ]
+        )
 
         self.fc = Linear(dim * 2, 1)
 
@@ -172,7 +190,7 @@ class GNN(Module):
         edge_index_dict = batch.edge_index_dict
 
         # peptide & mhc encoding
-        for nodes in ['peptide', 'mhc']:
+        for nodes in ["peptide", "mhc"]:
             x = x_dict[nodes]
             src_mask = x == 0
             x = self.embedding(x)
@@ -190,5 +208,5 @@ class GNN(Module):
         x_dict = {k: self.act(self.bn_conv[-1][k](v)) for k, v in x_dict.items()}
 
         # dense out
-        x = torch.sigmoid(self.fc(x_dict['mhc']))
+        x = torch.sigmoid(self.fc(x_dict["mhc"]))
         return x

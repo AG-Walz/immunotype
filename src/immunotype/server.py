@@ -14,10 +14,13 @@ Usage:
     uvicorn immunotype.server:asgi_app --host 0.0.0.0 --port 8000
 """
 
+
 def create_app():
     """Create the Gradio application."""
     from .web import create_interface
+
     return create_interface()
+
 
 def launch(host="0.0.0.0", port=8000, share=False, **kwargs):
     """
@@ -30,13 +33,8 @@ def launch(host="0.0.0.0", port=8000, share=False, **kwargs):
         **kwargs: Additional arguments passed to Gradio launch()
     """
     app = create_app()
-    app.launch(
-        server_name=host,
-        server_port=port,
-        share=share,
-        show_error=True,
-        **kwargs
-    )
+    app.launch(server_name=host, server_port=port, share=share, show_error=True, **kwargs)
+
 
 # ASGI app for container deployments (experimental)
 # Note: Some Gradio versions have ASGI compatibility issues
@@ -44,8 +42,10 @@ def create_asgi_app():
     """Create ASGI-compatible app (experimental - use launch() for production)."""
     return create_app()
 
+
 # Lazy ASGI app creation to avoid import-time issues
 _asgi_app = None
+
 
 def get_asgi_app():
     """Get or create the ASGI app."""
@@ -53,6 +53,7 @@ def get_asgi_app():
     if _asgi_app is None:
         _asgi_app = create_asgi_app()
     return _asgi_app
+
 
 # Export ASGI app for uvicorn
 asgi_app = get_asgi_app
@@ -65,24 +66,9 @@ if __name__ == "__main__":
     import rich_click as click
 
     @click.command()
-    @click.option(
-        "--host",
-        default="0.0.0.0",
-        help="Host to bind to",
-        show_default=True
-    )
-    @click.option(
-        "--port",
-        type=int,
-        default=8000,
-        help="Port to bind to",
-        show_default=True
-    )
-    @click.option(
-        "--share",
-        is_flag=True,
-        help="Create public Gradio link for sharing"
-    )
+    @click.option("--host", default="0.0.0.0", help="Host to bind to", show_default=True)
+    @click.option("--port", type=int, default=8000, help="Port to bind to", show_default=True)
+    @click.option("--share", is_flag=True, help="Create public Gradio link for sharing")
     def main_cli(host, port, share):
         """Launch the immunotype web server."""
         launch(host=host, port=port, share=share)

@@ -14,23 +14,25 @@ TEST_DATA_DIR = Path(__file__).parent / "fixtures"
 @pytest.fixture
 def sample_peptides():
     """Sample peptide dataframe for testing."""
-    return pd.DataFrame({
-        'peptide': ['ALDGRETD', 'ASDSGKYL', 'AVDPTSGQ', 'DISQTSKY', 'DSDINNRL'],
-        'sample': ['0', '0', '0', '0', '0']
-    })
+    return pd.DataFrame(
+        {
+            "peptide": ["ALDGRETD", "ASDSGKYL", "AVDPTSGQ", "DISQTSKY", "DSDINNRL"],
+            "sample": ["0", "0", "0", "0", "0"],
+        }
+    )
 
 
 @pytest.fixture
 def sample_alleles():
     """Sample HLA alleles for testing."""
-    return ['HLA-A*02:01', 'HLA-B*07:02', 'HLA-C*07:02']
+    return ["HLA-A*02:01", "HLA-B*07:02", "HLA-C*07:02"]
 
 
 @pytest.fixture
 def peptide_file(tmp_path, sample_peptides):
     """Temporary peptide file for CLI testing."""
     file_path = tmp_path / "test_peptides.tsv"
-    sample_peptides.to_csv(file_path, sep='\t', index=False, header=False)
+    sample_peptides.to_csv(file_path, sep="\t", index=False, header=False)
     return file_path
 
 
@@ -65,8 +67,9 @@ class MockModel:
     def __call__(self, batch):
         import numpy as np
         import torch
+
         # Return mock predictions
-        batch_size = len(batch.sample) if hasattr(batch, 'sample') else 1
+        batch_size = len(batch.sample) if hasattr(batch, "sample") else 1
         num_alleles = 3  # Mock number of alleles
         return torch.tensor(np.random.random((batch_size, num_alleles)))
 
