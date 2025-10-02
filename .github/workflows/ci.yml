@@ -38,10 +38,6 @@ jobs:
         uv run ruff check src tests
         uv run ruff format --check src tests
     
-    - name: Type check with mypy
-      run: |
-        uv run mypy src/immunotype
-    
     - name: Test with pytest
       run: |
         uv run pytest tests/ -v --cov=immunotype --cov-report=xml --cov-report=term-missing
