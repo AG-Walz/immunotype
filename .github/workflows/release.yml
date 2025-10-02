@@ -34,7 +34,7 @@ jobs:
     
     - name: Check package
       run: |
-        uv run twine check dist/*
+        twine check dist/*
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -68,29 +68,6 @@ jobs:
         uv pip install dist/*.whl
         uv run immunotype --help
 
-  publish-pypi:
-    runs-on: ubuntu-latest
-    needs: [build, test-release]
-    if: github.event_name == 'release' && github.event.release.prerelease == false
-    environment: 
-      name: pypi
-      url: https://pypi.org/p/immunotype
-    permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
-    
-    steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: dist
-        path: dist/
-    
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        packages-dir: dist/
-        verbose: true
-
   publish-test-pypi:
     runs-on: ubuntu-latest
     needs: [build, test-release]
@@ -114,3 +91,26 @@ jobs:
         repository-url: https://test.pypi.org/legacy/
         packages-dir: dist/
         verbose: true
+
+  #publish-pypi:
+  #  runs-on: ubuntu-latest
+  #  needs: [build, test-release]
+  #  if: github.event_name == 'release' && github.event.release.prerelease == false
+  #  environment: 
+  #    name: pypi
+  #    url: https://pypi.org/p/immunotype
+  #  permissions:
+  #    id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
+  #  
+  #  steps:
+  #  - name: Download build artifacts
+  #    uses: actions/download-artifact@v4
+  #    with:
+  #      name: dist
+  #      path: dist/
+  #  
+  #  - name: Publish package distributions to PyPI
+  #    uses: pypa/gh-action-pypi-publish@release/v1
+  #    with:
+  #      packages-dir: dist/
+  #      verbose: true
