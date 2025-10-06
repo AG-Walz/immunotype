@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -6,13 +7,9 @@ import torch
 from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 
-from .constants import ENSEMBLE_MODEL_WEIGHTS
-from .constants import LOOKUP_HOMOZYGOUS_THRESHOLDS
-from .constants import PLACEHOLDERS
+from .constants import ENSEMBLE_MODEL_WEIGHTS, LOOKUP_HOMOZYGOUS_THRESHOLDS, PLACEHOLDERS
 from .model import GNN
-from .utils import get_hetero_data
-from .utils import load_weights
-from .utils import tokenize
+from .utils import get_hetero_data, load_weights, tokenize
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
@@ -24,9 +21,9 @@ lookup_db = None
 
 
 def predict_lookup(peptide_df, selected_alleles):
-    lookup_score_df = pd.merge(
-        lookup_db.loc[lookup_db["allele"].isin(selected_alleles)], peptide_df, how="inner"
-    )
+    """Predict binding probabilities using the lookup method."""
+
+    lookup_score_df = pd.merge(lookup_db.loc[lookup_db["allele"].isin(selected_alleles)], peptide_df, how="inner")
     index = pd.MultiIndex.from_tuples(
         [
             [s, allele[4], allele]
@@ -36,10 +33,10 @@ def predict_lookup(peptide_df, selected_alleles):
         names=["sample", "locus", "allele"],
     )
     lookup_score_df = lookup_score_df[["sample", "locus", "allele"]].value_counts().reset_index()
+    # Apply cube root transformation to counts to improve homozygous detection
     lookup_score_df["probability"] = np.cbrt(lookup_score_df["count"])
-    lookup_score_df["probability"] = lookup_score_df.groupby(["sample", "locus"])[
-        "probability"
-    ].transform(lambda x: x / x.max())
+    lookup_score_df["probability"] = lookup_score_df.groupby(["sample", "locus"])["probability"] \
+                                                    .transform(lambda x: x / x.max())
     lookup_score_df = (
         lookup_score_df.set_index(["sample", "locus", "allele"])
         .reindex(index)
@@ -62,8 +59,9 @@ def predict_lookup(peptide_df, selected_alleles):
 
 
 def predict_model(peptide_df, selected_alleles, batch_size, max_n_peptides):
-    selected_mhc_features = mhc_features[mhc_df["allele"].isin(selected_alleles)]
+    """Predict binding probabilities using the GNN model."""
 
+    selected_mhc_features = mhc_features[mhc_df["allele"].isin(selected_alleles)]
     data = get_hetero_data(peptide_df, selected_mhc_features, max_n_peptides)
     dataloader = DataLoader(data, batch_size=batch_size, shuffle=False)
 
@@ -71,29 +69,25 @@ def predict_model(peptide_df, selected_alleles, batch_size, max_n_peptides):
     model.eval()
     with torch.no_grad():
         for batch in tqdm(dataloader, desc="🤖 Running HLA typing prediction..."):
-            predictions.append(
-                np.reshape(model(batch).cpu().detach().numpy(), (len(batch.sample), -1))
-            )
+            predictions.append(np.reshape(model(batch).cpu().detach().numpy(), (len(batch.sample), -1)))
             samples.append(batch.sample)
 
     probabilities = pd.concat(
         [
             pd.DataFrame(np.concatenate(samples), columns=["sample"]),
             pd.DataFrame(np.concatenate(predictions), columns=selected_alleles),
-        ],
-        axis=1,
-    ).melt(id_vars="sample", var_name="allele", value_name="probability")
+        ], axis=1) \
+        .melt(id_vars="sample", var_name="allele", value_name="probability")
+
     probabilities = probabilities.groupby(["sample", "allele"])["probability"].mean().reset_index()
 
     probabilities["locus"] = probabilities["allele"].str[4]
     return probabilities
 
 
-def prepare_data(
-    use_gnn=True,
-    use_lookup=True,
-    gnn_weight_path=None,
-):
+def prepare_data(use_gnn=True, use_lookup=True, gnn_weight_path=None):
+    """Prepare data and load model weights."""
+
     if gnn_weight_path is None:
         gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pth"
 
@@ -102,24 +96,20 @@ def prepare_data(
 
         # Check if weights file exists
         if not gnn_weight_path.exists():
-            import warnings
-
             warnings.warn(
                 f"GNN weights file not found at {gnn_weight_path}. "
                 "Falling back to lookup-only mode. To suppress this warning, use --no-gnn flag.",
                 stacklevel=2,
-            )
+)
             return False  # Indicate GNN couldn't be loaded
 
         try:
             model = GNN()
             model = load_weights(model, gnn_weight_path)
-
             max_len_mhc = mhc_df["sequence"].str.split().str.len().max()
             mhc_features = tokenize(mhc_df["sequence"].values, max_len_mhc)
-        except Exception as e:
-            import warnings
 
+        except Exception as e:
             warnings.warn(
                 f"Failed to load GNN model: {e}. Falling back to lookup-only mode. "
                 "To suppress this warning, use --no-gnn flag.",
@@ -131,7 +121,7 @@ def prepare_data(
         global lookup_db
         lookup_db = pd.read_csv(PACKAGE_ROOT / "data" / "lookup_db.csv")
 
-    return True  # Indicate success
+    return True
 
 
 def predict(
@@ -143,6 +133,8 @@ def predict(
     max_n_peptides=10_000,
     gnn_weight_path=None,
 ):
+    """Predict binding probabilities and HLA typing."""
+
     if not use_gnn and not use_lookup:
         raise ValueError("Must use GNN or lookup or both")
 
@@ -165,9 +157,7 @@ def predict(
     probabilities = {}
 
     if use_gnn and gnn_loaded:
-        probabilities["model"] = predict_model(
-            peptide_df, selected_alleles, batch_size, max_n_peptides
-        )
+        probabilities["model"] = predict_model(peptide_df, selected_alleles, batch_size, max_n_peptides)
 
     if use_lookup:
         probabilities["lookup"] = predict_lookup(peptide_df, selected_alleles)
@@ -180,16 +170,14 @@ def predict(
             how="outer",
             suffixes=["_model", "_lookup"],
         ).fillna(0)
+
         pred_df["probability"] = pred_df.apply(
             lambda x: (
                 x["probability_model"] * (w := ENSEMBLE_MODEL_WEIGHTS[x["locus"]])
-                + x["probability_lookup"] * (1 - w)
-            ),
-            axis=1,
-        )
-        pred_df = pred_df[
-            ["sample", "locus", "allele", "probability_model", "probability_lookup", "probability"]
-        ]
+                + x["probability_lookup"] * (1 - w)),
+            axis=1)
+
+        pred_df = pred_df[["sample", "locus", "allele", "probability_model", "probability_lookup", "probability"]]
     else:
         pred_df = list(probabilities.values())[0]
 
@@ -197,12 +185,10 @@ def predict(
 
     # typing
     typing = pred_df.loc[pred_df["probability"] > 0]
-    if len(typing) > 0:
+    if len(typing) >= 3:
         typing = (
             typing.groupby(["sample", "locus"])
-            .apply(
-                lambda x: x.sort_values(by="probability")["allele"].iloc[-2:], include_groups=False
-            )
+            .apply(lambda x: x.sort_values(by="probability")["allele"].iloc[-2:], include_groups=False)
             .reset_index()
         )
 
@@ -212,6 +198,8 @@ def predict(
     else:
         # Create empty typing DataFrame with correct columns
         typing = pd.DataFrame(columns=["sample", "locus", "allele"])
+        warnings.warn(f"Missing typing results, possibly due to insufficient input data. Use GNN or increase input size. ",
+                stacklevel=2)
 
     # filter out homozygous placeholder alleles
     typing = typing.loc[~typing["allele"].str.contains("homozygous")]

@@ -15,7 +15,17 @@ Immunotype is a modern Python package for predicting HLA typing from peptide seq
 ### Installation
 
 ```bash
+# Core CLI functionality
 pip install immunotype
+
+# With app interface (optional)
+pip install immunotype[app]
+
+# Development dependencies
+pip install immunotype[dev]
+
+# Everything
+pip install immunotype[all]
 ```
 
 ### Command Line Interface
@@ -33,6 +43,20 @@ immunotype peptides.tsv output.tsv --batch-size 5000 --no-gnn
 # Explore all CLI options
 immunotype --help
 ```
+
+### App Interface
+
+**Option 1: Local Gradio App (Recommended)**
+```bash
+# Install with app dependencies
+pip install immunotype[app]
+
+# Run the Gradio app
+python app.py
+```
+
+**Option 2: Hugging Face Spaces**  
+The app is Hugging Face Spaces compatible. Simply upload `app.py` and the `src/` folder to your Space.
 
 ### Python API
 
@@ -53,16 +77,6 @@ predictions, typing = predict(
     peptide_df=peptides,
     selected_alleles=alleles
 )
-```
-
-### Web Interface
-
-```bash
-# Development/testing
-immunotype-web
-
-# Production deployment
-immunotype-server --host 0.0.0.0 --port 8000
 ```
 
 ## 📊 Input Formats
