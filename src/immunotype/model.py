@@ -124,49 +124,21 @@ class GNN(Module):
 
         # Peptide
         self.encoder = ModuleDict(
-            {
-                "peptide": ModuleList(
-                    [
-                        SequenceEncoder(
-                            embedding_dim,
-                            dim_ff_enc_pep,
-                            n_heads_enc_pep,
-                            n_layers_enc_pep,
-                            dropout,
-                        ),
-                        Linear(embedding_dim, dim),
-                    ]
-                ),
-                "mhc": ModuleList(
-                    [
-                        SequenceEncoder(
-                            embedding_dim,
-                            dim_ff_enc_mhc,
-                            n_heads_enc_mhc,
-                            n_layers_enc_mhc,
-                            dropout,
-                        ),
-                        Linear(embedding_dim, dim * 2),
-                    ]
-                ),
+            {"peptide": ModuleList(
+                        [SequenceEncoder(embedding_dim, dim_ff_enc_pep, n_heads_enc_pep, n_layers_enc_pep, dropout),
+                        Linear(embedding_dim, dim)]),
+            "mhc": ModuleList(
+                        [SequenceEncoder(embedding_dim, dim_ff_enc_mhc, n_heads_enc_mhc, n_layers_enc_mhc, dropout),
+                        Linear(embedding_dim, dim * 2)]),
             }
         )
-        self.bn_conv = ModuleList(
-            [
-                ModuleDict(
-                    {
+        self.bn_conv = ModuleList([ModuleDict({
                         "peptide": BatchNorm(dim, allow_single_element=True),
                         "mhc": BatchNorm(dim * 2, allow_single_element=True),
-                    }
-                )
-                for _ in range(n_layers_conv + 1)
-            ]
-        )
+                    }) for _ in range(n_layers_conv + 1)])
 
-        self.conv = ModuleList(
-            [
-                HeteroConv(
-                    {
+        self.conv = ModuleList([
+                        HeteroConv({
                         ("peptide", "determines", "mhc"): GumbelTransformerConv(
                             (dim, dim * 2), dim_out_conv, heads=n_heads_conv, dropout=dropout
                         ),
@@ -176,12 +148,8 @@ class GNN(Module):
                         ("peptide", "influences", "peptide"): TransformerConv(
                             dim, dim_out_conv, heads=n_heads_conv, dropout=dropout
                         ),
-                    },
-                    aggr="cat",
-                )
-                for _ in range(n_layers_conv)
-            ]
-        )
+                    }, aggr="cat")
+                for _ in range(n_layers_conv)])
 
         self.fc = Linear(dim * 2, 1)
 

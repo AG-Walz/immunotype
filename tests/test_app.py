@@ -1,18 +1,23 @@
 """
-Tests for the web application.
+Tests for the app application.
 """
 
+import sys
+from pathlib import Path
 import pandas as pd
 import pytest
 
-from immunotype.web import create_interface
-from immunotype.web import submit
-from immunotype.web import update_allele_input
-from immunotype.web import update_peptide_input
+# Add the main folder to path to import from app.py
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+try:
+    from app import create_interface, submit, update_allele_input, update_peptide_input
+except ImportError:
+    pytest.skip("App dependencies not available. Install with 'pip install immunotype[app]'", allow_module_level=True)
 
 
-class TestWebApp:
-    """Test cases for the web application."""
+class TestApp:
+    """Test cases for the app application."""
 
     def test_create_interface(self):
         """Test that the Gradio interface can be created."""
@@ -36,14 +41,16 @@ class TestWebApp:
         def mock_predict(*args, **kwargs):
             return mock_pred_df, mock_typing
 
-        monkeypatch.setattr("immunotype.web.predict", mock_predict)
+        monkeypatch.setattr("app.predict", mock_predict)
 
         # Test the submit function
         peptides = "ALDGRETD\nASDSGKYL"
         alleles = "HLA-A*02:01\nHLA-B*07:02"
         batch_size = 1000
+        use_gnn = True
+        use_lookup = True
 
-        result = submit(peptides, alleles, batch_size)
+        result = submit(peptides, alleles, batch_size, use_gnn, use_lookup)
 
         # Should return a tuple with typing results, probability output, and file update
         assert isinstance(result, tuple)
@@ -92,15 +99,17 @@ class TestWebApp:
         def mock_predict(*args, **kwargs):
             raise ValueError("Test error")
 
-        monkeypatch.setattr("immunotype.web.predict", mock_predict)
+        monkeypatch.setattr("app.predict", mock_predict)
 
         peptides = "ALDGRETD"
         alleles = "HLA-A*02:01"
         batch_size = 1000
+        use_gnn = True
+        use_lookup = True
 
         # This should not crash the application
         with pytest.raises(ValueError):
-            submit(peptides, alleles, batch_size)
+            submit(peptides, alleles, batch_size, use_gnn, use_lookup)
 
     def test_peptide_parsing(self, monkeypatch):
         """Test that peptide input parsing works correctly."""
@@ -117,11 +126,13 @@ class TestWebApp:
             assert all(peptide_df["sample"] == 0)
             return mock_pred_df, mock_typing
 
-        monkeypatch.setattr("immunotype.web.predict", mock_predict)
+        monkeypatch.setattr("app.predict", mock_predict)
 
         # Test with newline-separated peptides
         peptides = "ALDGRETD\nASDSGKYL\nAVDPTSGQ"
         alleles = "HLA-A*02:01"
         batch_size = 1000
+        use_gnn = True
+        use_lookup = True
 
-        submit(peptides, alleles, batch_size)
+        submit(peptides, alleles, batch_size, use_gnn, use_lookup)

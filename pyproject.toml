@@ -34,26 +34,23 @@ dependencies = [
     "torch-geometric>=2.3.0",
     "tqdm>=4.64.0",
     "rich-click>=1.6.0",
-    "gradio>=4.0.0",
-    "seaborn>=0.11.0",
     "pathlib",
 ]
 
 [project.optional-dependencies]
+app = [
+    "gradio>=4.0.0",
+    "seaborn>=0.11.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
-    "ruff>=0.1.0",
     "pre-commit>=3.0.0",
     "types-seaborn",
 ]
-server = [
-    "uvicorn[standard]>=0.24.0",
-    "fastapi>=0.104.0",
-]
 all = [
-    "immunotype[dev,server]"
+    "immunotype[dev,app]"
 ]
 
 [project.urls]
@@ -64,8 +61,6 @@ Issues = "https://github.com/immunotype/immunotype/issues"
 
 [project.scripts]
 immunotype = "immunotype.cli:main"
-immunotype-web = "immunotype.web:app.launch"
-immunotype-server = "immunotype.server:app"
 
 # Tool configurations
 [tool.hatch.build.targets.wheel]
@@ -114,34 +109,3 @@ exclude_lines = [
     "if False:",
 ]
 
-[tool.ruff]
-target-version = "py310"
-line-length = 100
-
-[tool.ruff.lint]
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
-    "N",  # pep8-naming
-    "SIM", # flake8-simplify
-]
-ignore = [
-    "E501", # line too long, handled by black
-    "B008", # do not perform function calls in argument defaults
-    "C901", # too complex
-    "B904", # raise from
-]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-"tests/**/*" = ["E501", "D"]
-"**/model.py" = ["N812"]  # Allow F for torch.nn.functional import
-
-[tool.ruff.lint.isort]
-known-first-party = ["immunotype"]
-force-single-line = true

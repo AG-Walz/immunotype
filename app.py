@@ -1,35 +1,29 @@
 """
-Gradio web interface for immunotype.
+Gradio app interface for immunotype.
 
-This module provides the web-based user interface for HLA typing predictions.
+This module provides the app-based user interface for HLA typing predictions.
 It creates an interactive Gradio interface that allows users to input peptide
 sequences and get HLA typing predictions with visualization.
 
-The interface includes:
-- Peptide input (text or file upload)
-- HLA allele configuration
-- Batch processing settings
-- Interactive results display
-- Downloadable results
-
 Usage:
-    python -m immunotype.web  # Launch directly
-
-For production deployment, use:
-    python -m immunotype.server
+    python app.py  # Launch directly
 """
 
 from pathlib import Path
+import sys
+
+# Add src directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import gradio as gr
 import pandas as pd
 import seaborn as sns
 import torch
 
-from .immunotype import predict
+from immunotype.immunotype import predict
 
 # Get package root directory
-PACKAGE_ROOT = Path(__file__).parent
+PACKAGE_ROOT = Path(__file__).parent / "src" / "immunotype"
 
 cm = sns.light_palette("green", as_cmap=True)
 DEVICE = torch.device("cpu")
@@ -37,7 +31,7 @@ DEVICE = torch.device("cpu")
 probability_df = None
 
 
-def submit(peptides, alleles, batch_size):
+def submit(peptides, alleles, batch_size, use_gnn, use_lookup):
     global probability_df
 
     peptide_df = pd.DataFrame(peptides.replace("\n", ",").split(","), columns=["peptide"])
@@ -46,8 +40,8 @@ def submit(peptides, alleles, batch_size):
     probability_df, typing = predict(
         peptide_df,
         alleles,
-        use_gnn=True,
-        use_lookup=True,
+        use_gnn=use_gnn,
+        use_lookup=use_lookup,
         batch_size=10,
         max_n_peptides=10_000,
         gnn_weight_path=PACKAGE_ROOT / "weights" / "gnn_model_weights.pth",
@@ -105,10 +99,21 @@ def create_interface():
                         )
                         peptide_file_input = gr.File(label="Peptides input", height=140)
                     with gr.Accordion("Additional settings", open=False):
+                        with gr.Row():
+                            use_gnn_toggle = gr.Checkbox(
+                                label="Use GNN model",
+                                value=True,
+                                info="Enable/disable the pre-trained graph neural network model"
+                            )
+                            use_lookup_toggle = gr.Checkbox(
+                                label="Use lookup table",
+                                value=True,
+                                info="Enable/disable the peptide-HLA lookup table"
+                            )
                         with gr.Group():
                             allele_input = gr.Textbox(
                                 label="HLA allele input",
-                                info="Alleles need to be separated by newlines (default).",
+                                info="Alleles need to be separated by newlines.",
                                 lines=20,
                                 value=example_alleles,
                             )
@@ -147,7 +152,7 @@ def create_interface():
 
             submit_button.click(
                 submit,
-                inputs=[peptide_input, allele_input, batch_size_slider],
+                inputs=[peptide_input, allele_input, batch_size_slider, use_gnn_toggle, use_lookup_toggle],
                 outputs=[typing_output, typing_probabilities, file_output],
             )
             peptide_file_input.upload(
@@ -164,28 +169,27 @@ def create_interface():
             ### Usage
             1. **Input peptides**: Enter peptide sequences separated by newlines, or upload a file
             2. **Select typing method**: Choose between automatic typing or input known HLA alleles
-            3. **Optional**: Upload peptide probabilities if known
             4. **Submit**: Click submit to run the prediction
             5. **View results**: See predicted typing and download detailed probabilities
 
             ### Input Formats
             - **Peptides**: One peptide sequence per line (e.g., `ALDGRETD`)
-            - **HLA alleles**: One allele per line (e.g., `HLA-A*01:01`)
+            - **HLA alleles**: One allele per line (e.g., HLA-A*24-27)
             - **Files**: TSV/CSV files with peptide sequences in the first column
 
             ### Output
-            - **Typing**: Most likely HLA alleles for your sample
+            - **Typing**: Predicted HLA alleles for your sample
             - **Probabilities**: Detailed probability scores for all tested alleles
             - **CSV Download**: Full results table for further analysis
 
             ### Citation
-            If you use immunotype in your research, please cite our paper.
+            If you use immunotype in your research, please cite TODO.
             """)
 
     return demo
 
 
-# For direct execution of the web interface
+# For direct execution of the app interface
 if __name__ == "__main__":
     app = create_interface()
     app.launch()
