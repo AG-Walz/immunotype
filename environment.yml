@@ -1,0 +1,17 @@
+name: immunotype
+channels:
+  - pytorch
+  - defaults
+  - pyg
+dependencies:
+  - python=3.12
+  - pip
+  - pytorch
+  - pyg
+  - torchvision
+  - torchaudio
+  - cpuonly
+  - pip:
+      - pandas
+      - numpy
+      - click
