@@ -1,3 +1,15 @@
+---
+title: immunotype
+emoji: 🧬
+colorFrom: purple
+colorTo: indigo
+sdk: gradio
+sdk_version: 5.48.0
+python_version: 3.10
+app_file: app.py
+license: mit
+---
+
 # 🧬 immunotype
 
 **Peptide-based HLA typing from immunopeptidomics data**
@@ -113,15 +125,3 @@ sample	peptide
   year={2025}
 }
 ```
-
----
-title: immunotype
-emoji: 🧬
-colorFrom: purple
-colorTo: indigo
-sdk: gradio
-sdk_version: 5.48.0
-python_version: 3.10
-app_file: app.py
-license: mit
----
