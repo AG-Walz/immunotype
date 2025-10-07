@@ -17,7 +17,6 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import gradio as gr
 import pandas as pd
-import seaborn as sns
 import torch
 
 from immunotype.immunotype import predict
@@ -25,7 +24,6 @@ from immunotype.immunotype import predict
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent / "src" / "immunotype"
 
-cm = sns.light_palette("green", as_cmap=True)
 DEVICE = torch.device("cpu")
 
 probability_df = None
@@ -54,7 +52,7 @@ def submit(peptides, alleles, batch_size, use_gnn, use_lookup):
 
 def update_probability_output():
     global probability_df
-    style = probability_df.style.background_gradient(cmap=cm)
+    style = probability_df.style.background_gradient(cmap='viridis')
     return style
 
 
@@ -192,4 +190,4 @@ def create_interface():
 # For direct execution of the app interface
 if __name__ == "__main__":
     app = create_interface()
-    app.launch()
+    app.launch(debug=True)

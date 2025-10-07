@@ -99,29 +99,16 @@ def prepare_data(use_gnn=True, use_lookup=True, gnn_weight_path=None):
             warnings.warn(
                 f"GNN weights file not found at {gnn_weight_path}. "
                 "Falling back to lookup-only mode. To suppress this warning, use --no-gnn flag.",
-                stacklevel=2,
-)
-            return False  # Indicate GNN couldn't be loaded
+                stacklevel=2)
 
-        try:
-            model = GNN()
-            model = load_weights(model, gnn_weight_path)
-            max_len_mhc = mhc_df["sequence"].str.split().str.len().max()
-            mhc_features = tokenize(mhc_df["sequence"].values, max_len_mhc)
-
-        except Exception as e:
-            warnings.warn(
-                f"Failed to load GNN model: {e}. Falling back to lookup-only mode. "
-                "To suppress this warning, use --no-gnn flag.",
-                stacklevel=2,
-            )
-            return False  # Indicate GNN couldn't be loaded
+        model = GNN()
+        model = load_weights(model, gnn_weight_path)
+        max_len_mhc = mhc_df["sequence"].str.split().str.len().max()
+        mhc_features = tokenize(mhc_df["sequence"].values, max_len_mhc)
 
     if use_lookup:
         global lookup_db
         lookup_db = pd.read_csv(PACKAGE_ROOT / "data" / "lookup_db.csv")
-
-    return True
 
 
 def predict(
@@ -141,28 +128,18 @@ def predict(
     if gnn_weight_path is None:
         gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pth"
 
-    # prepare data only when necessary
-    gnn_loaded = True
-    if (use_gnn and model is None) or (use_lookup and lookup_db is None):
-        gnn_loaded = prepare_data(use_gnn, use_lookup, gnn_weight_path)
-
-    # If GNN was requested but couldn't be loaded, fall back to lookup only
-    if use_gnn and not gnn_loaded:
-        use_gnn = False
-        if not use_lookup:
-            raise ValueError(
-                "GNN model could not be loaded and lookup is disabled. Please use --no-gnn flag or ensure GNN weights are available."
-            )
+    # Load model and lookup
+    prepare_data(use_gnn, use_lookup, gnn_weight_path)
 
     probabilities = {}
 
-    if use_gnn and gnn_loaded:
+    if use_gnn:
         probabilities["model"] = predict_model(peptide_df, selected_alleles, batch_size, max_n_peptides)
 
     if use_lookup:
         probabilities["lookup"] = predict_lookup(peptide_df, selected_alleles)
 
-    if use_gnn and use_lookup and gnn_loaded:
+    if use_gnn and use_lookup:
         pred_df = pd.merge(
             probabilities["model"],
             probabilities["lookup"],
@@ -191,10 +168,6 @@ def predict(
             .apply(lambda x: x.sort_values(by="probability")["allele"].iloc[-2:], include_groups=False)
             .reset_index()
         )
-
-        # Drop level_2 column if it exists
-        if "level_2" in typing.columns:
-            typing = typing.drop("level_2", axis=1)
     else:
         # Create empty typing DataFrame with correct columns
         typing = pd.DataFrame(columns=["sample", "locus", "allele"])

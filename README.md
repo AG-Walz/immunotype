@@ -1,3 +1,14 @@
+---
+title: immunotype
+emoji: 🧬
+colorFrom: purple
+colorTo: indigo
+sdk: gradio
+python_version: 3.10.0
+app_file: app.py
+license: mit
+---
+
 # 🧬 immunotype
 
 **Peptide-based HLA typing from immunopeptidomics data**
