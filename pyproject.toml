@@ -33,21 +33,18 @@ dependencies = [
     "torch>=2.0.0",
     "torch-geometric>=2.3.0",
     "tqdm>=4.64.0",
-    "rich-click>=1.6.0",
-    "pathlib",
+    "rich-click>=1.6.0"
 ]
 
 [project.optional-dependencies]
 app = [
-    "gradio>=4.0.0",
-    "seaborn>=0.11.0",
+    "gradio>=4.0.0"
 ]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
-    "pre-commit>=3.0.0",
-    "types-seaborn",
+    "pre-commit>=3.0.0"
 ]
 all = [
     "immunotype[dev,app]"

@@ -17,7 +17,6 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 import gradio as gr
 import pandas as pd
-import seaborn as sns
 import torch
 
 from immunotype.immunotype import predict
@@ -25,7 +24,7 @@ from immunotype.immunotype import predict
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent / "src" / "immunotype"
 
-cm = sns.light_palette("green", as_cmap=True)
+cm = gr.themes.Soft().primary_hue
 DEVICE = torch.device("cpu")
 
 probability_df = None
