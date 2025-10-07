@@ -49,4 +49,4 @@ TOKEN_VOCABULARY = dict(zip(TOKENS, range(1, len(TOKENS) + 1), strict=True))
 
 
 LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.425, "B": 0.3, "C": 0.4}
-ENSEMBLE_MODEL_WEIGHTS = {"A": 0.6, "B": 0.4, "C": 0.7}
+ENSEMBLE_MODEL_WEIGHTS = {"A": 0.6, "B": 0.7, "C": 1.0}
