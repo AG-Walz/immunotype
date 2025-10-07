@@ -10,7 +10,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 authors = [
-    {name = "immunotype contributors"}
+    {name = "Matteo Pilz"},
+    {name = "Jonas Scheid"}
 ]
 keywords = ["immunopeptidomics", "HLA", "typing", "peptides", "machine learning", "bioinformatics"]
 classifiers = [
@@ -52,7 +53,6 @@ all = [
 
 [project.urls]
 Homepage = "https://github.com/immunotype/immunotype"
-Documentation = "https://github.com/immunotype/immunotype#readme"
 Repository = "https://github.com/immunotype/immunotype.git"
 Issues = "https://github.com/immunotype/immunotype/issues"
 
@@ -93,16 +93,4 @@ markers = [
 [tool.coverage.run]
 source = ["src"]
 branch = true
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if __name__ == .__main__.:",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if False:",
-]
 
