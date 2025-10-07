@@ -24,7 +24,6 @@ from immunotype.immunotype import predict
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent / "src" / "immunotype"
 
-cm = gr.themes.Soft().primary_hue
 DEVICE = torch.device("cpu")
 
 probability_df = None
@@ -53,7 +52,7 @@ def submit(peptides, alleles, batch_size, use_gnn, use_lookup):
 
 def update_probability_output():
     global probability_df
-    style = probability_df.style.background_gradient(cmap=cm)
+    style = probability_df.style.background_gradient(cmap='viridis')
     return style
 
 
