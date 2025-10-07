@@ -190,4 +190,4 @@ def create_interface():
 # For direct execution of the app interface
 if __name__ == "__main__":
     app = create_interface()
-    app.launch()
+    app.launch(debug=True)
