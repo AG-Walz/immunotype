@@ -12,6 +12,8 @@ Usage:
 from pathlib import Path
 import sys
 
+from numpy import bool_
+
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
@@ -33,7 +35,9 @@ typing_df = None
 probability_df = None
 
 
-def submit(peptides, alleles, max_n_peptides, use_gnn, use_lookup):
+def submit(peptides, alleles, max_n_peptides, model_to_use):
+    use_gnn = model_to_use != "Lookup"
+    use_lookup = model_to_use != "GNN"
     global typing_df, probability_df
 
     peptide_df = pd.DataFrame(
@@ -123,15 +127,12 @@ def create_interface():
                         peptide_file_input = gr.File(label="Peptides input", height=140)
                     with gr.Accordion("Additional settings", open=False):
                         with gr.Row():
-                            use_gnn_toggle = gr.Checkbox(
-                                label="Use GNN model",
-                                value=True,
-                                info="Enable/disable the pre-trained graph neural network model",
-                            )
-                            use_lookup_toggle = gr.Checkbox(
-                                label="Use lookup table",
-                                value=True,
-                                info="Enable/disable the peptide-HLA lookup table",
+                            model_toggle = gr.Radio(
+                                choices=["Ensemble", "GNN", "Lookup"],
+                                value="Ensemble",
+                                label="Select which model to use",
+                                info="Ensemble uses both, the pre-trained graph neural network and the peptide-HLA lookup table. "
+                                + "Alternatively, you can also use either of them alone.",
                             )
                         with gr.Group():
                             allele_input = gr.Textbox(
@@ -190,8 +191,7 @@ def create_interface():
                     peptide_input,
                     allele_input,
                     n_peptides_slider,
-                    use_gnn_toggle,
-                    use_lookup_toggle,
+                    model_toggle,
                 ],
                 outputs=[
                     typing,
