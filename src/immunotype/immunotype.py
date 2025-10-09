@@ -203,10 +203,10 @@ def predict(
     pred_df = pred_df.sort_values(["sample", "locus", "allele"])
 
     # typing
-    typing = pred_df.loc[pred_df["probability"] > 0]
-    if len(typing) >= 3:
-        typing = (
-            typing.groupby(["sample", "locus"])
+    typing_df = pred_df.loc[pred_df["probability"] > 0]
+    if len(typing_df) >= 3:
+        typing_df = (
+            typing_df.groupby(["sample", "locus"])
             .apply(
                 lambda x: x.sort_values(by="probability")["allele"].iloc[-2:],
                 include_groups=False,
@@ -215,12 +215,12 @@ def predict(
         )
     else:
         # Create empty typing DataFrame with correct columns
-        typing = pd.DataFrame(columns=["sample", "locus", "allele"])
+        typing_df = pd.DataFrame(columns=["sample", "locus", "allele"])
         warnings.warn(
             f"Missing typing results, possibly due to insufficient input data. Use GNN or increase input size. ",
             stacklevel=2,
         )
 
     # filter out homozygous placeholder alleles
-    typing = typing.loc[~typing["allele"].str.contains("homozygous")]
-    return pred_df, typing
+    typing_df = typing_df.loc[~typing_df["allele"].str.contains("homozygous")]
+    return pred_df, typing_df

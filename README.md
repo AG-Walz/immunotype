@@ -57,7 +57,6 @@ immunotype --help
 
 ### App Interface
 
-**Option 1: Local Gradio App (Recommended)**
 ```bash
 # Install with app dependencies
 pip install immunotype[app]
@@ -65,9 +64,6 @@ pip install immunotype[app]
 # Run the Gradio app
 python app.py
 ```
-
-**Option 2: Hugging Face Spaces**  
-The app is Hugging Face Spaces compatible. Simply upload `app.py` and the `src/` folder to your Space.
 
 ### Python API
 

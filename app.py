@@ -26,18 +26,22 @@ PACKAGE_ROOT = Path(__file__).parent / "src" / "immunotype"
 
 DEVICE = torch.device("cpu")
 
+# number of decimals shown and in export
+DECIMAL_PRECISION = 4
+
+typing_df = None
 probability_df = None
 
 
 def submit(peptides, alleles, max_n_peptides, use_gnn, use_lookup):
-    global probability_df
+    global typing_df, probability_df
 
     peptide_df = pd.DataFrame(
         peptides.replace("\n", ",").split(","), columns=["peptide"]
     )
     peptide_df["sample"] = 0
     alleles = pd.Series(alleles.replace("\n", ",").split(","))
-    probability_df, typing = predict(
+    probability_df, typing_df = predict(
         peptide_df,
         alleles,
         use_gnn=use_gnn,
@@ -45,25 +49,41 @@ def submit(peptides, alleles, max_n_peptides, use_gnn, use_lookup):
         max_n_peptides=max_n_peptides,
         gnn_weight_path=PACKAGE_ROOT / "weights" / "gnn_model_weights.pt",
     )
-    typing = typing[["allele", "locus"]].values
-    csv_path = "probabilities.csv"
-    probability_df.to_csv(csv_path, index=False)
+    typing_df = (
+        typing_df[["sample", "allele"]]
+        .groupby("sample")["allele"]
+        .apply(lambda x: ",".join(x.sort_values(ascending=True)))
+    ).reset_index()
+
+    typing_path = "typing.csv"
+    typing_df.to_csv(typing_path, index=False)
+
+    probabilities_path = "probabilities.csv"
+    probability_df.to_csv(
+        probabilities_path, index=False, float_format=f"%.{DECIMAL_PRECISION}f"
+    )
+
     return (
-        typing,
+        typing_df,
         update_probability_output(),
-        gr.update(value=csv_path, visible=True),
+        gr.update(value=typing_path, visible=True),
+        gr.update(value=probabilities_path, visible=True),
     )
 
 
 def update_probability_output():
     global probability_df
-    style = probability_df.style.background_gradient(cmap="Blues")
+    style = probability_df.style.format(
+        precision=DECIMAL_PRECISION
+    ).background_gradient(cmap="Blues")
     return style
 
 
 def sort_table(col):
     global probability_df
-    probability_df = probability_df.sort_values(by=col, ascending=(col == "allele"))
+    probability_df = probability_df.sort_values(
+        by=col, ascending=(col != "probability")
+    )
     return update_probability_output()
 
 
@@ -138,22 +158,31 @@ def create_interface():
                     submit_button = gr.Button("Submit", variant="primary")
 
                 with gr.Column(scale=4):
-                    typing_output = gr.HighlightedText(
-                        label="Typing",
-                    )
+                    with gr.Group():
+                        typing = gr.Dataframe(
+                            headers=["sample", "typing"],
+                            datatype=["str", "str"],
+                            row_count=1,
+                            col_count=(2, "fixed"),
+                            show_copy_button=True,
+                            label="Typing",
+                        )
+                        typing_output = gr.File(label="Download CSV", visible=False)
                     with gr.Group():
                         col_selector = gr.Dropdown(
-                            choices=["allele", "probability"], label="Sort by"
+                            choices=["sample", "allele", "probability"], label="Sort by"
                         )
                         typing_probabilities = gr.Dataframe(
-                            headers=["allele", "probability", "locus"],
-                            datatype=["str", "number", "str"],
+                            headers=["sample", "allele", "probability", "locus"],
+                            datatype=["str", "str", "number", "str"],
                             row_count=1,
                             label="Typing probabilities",
-                            col_count=(3, "fixed"),
+                            col_count=(4, "fixed"),
                             show_copy_button=True,
                         )
-                        file_output = gr.File(label="Download CSV", visible=False)
+                        probability_output = gr.File(
+                            label="Download CSV", visible=False
+                        )
 
             submit_button.click(
                 submit,
@@ -164,7 +193,12 @@ def create_interface():
                     use_gnn_toggle,
                     use_lookup_toggle,
                 ],
-                outputs=[typing_output, typing_probabilities, file_output],
+                outputs=[
+                    typing,
+                    typing_probabilities,
+                    typing_output,
+                    probability_output,
+                ],
             )
             peptide_file_input.upload(
                 update_peptide_input, inputs=peptide_file_input, outputs=peptide_input
@@ -205,4 +239,4 @@ def create_interface():
 # For direct execution of the app interface
 if __name__ == "__main__":
     app = create_interface()
-    app.launch(debug=True)
+    app.launch()
