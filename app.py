@@ -9,16 +9,6 @@ Usage:
     python app.py  # Launch directly
 """
 
-from pathlib import Path
-import sys
-
-# Add src directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-import gradio as gr
-import pandas as pd
-import torch
-
 from immunotype.app import main
 
 # For direct execution of the app interface
