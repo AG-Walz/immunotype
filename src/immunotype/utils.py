@@ -3,6 +3,7 @@ import itertools
 import numpy as np
 import pandas as pd
 import torch
+from torch.nn import Module
 from torch_geometric.data import HeteroData
 
 from .constants import TOKEN_VOCABULARY
@@ -18,7 +19,7 @@ def tokenize(sequences, max_len):
     )
 
 
-def get_hetero_data(peptide_df, mhcs, max_n_peptides):
+def get_hetero_data(peptide_df: pd.DataFrame, mhcs, max_n_peptides):
     """
     Get HeteroData object from HLA and peptide features.
     :param mhc_features:
@@ -29,7 +30,8 @@ def get_hetero_data(peptide_df, mhcs, max_n_peptides):
         [torch.arange(len(mhcs)).unsqueeze(0), torch.arange(len(mhcs)).unsqueeze(0)], 0
     )  # MHCs only connected to themselves
     peptide_features = [
-        "[CLS] " + " ".join(list(peptide)) + " [SEP]" for peptide in peptide_df["peptide"].values
+        "[CLS] " + " ".join(list(peptide)) + " [SEP]"
+        for peptide in peptide_df["peptide"].values
     ]
     peptide_features = tokenize(
         peptide_features, pd.Series(peptide_features).str.split().str.len().max()
@@ -44,7 +46,11 @@ def get_hetero_data(peptide_df, mhcs, max_n_peptides):
             )
             entry["mhc"].x = torch.tensor(mhcs, dtype=torch.int32)
             edges = torch.tensor(
-                list(itertools.product(range(len(entry["peptide"].x)), range(len(entry["mhc"].x)))),
+                list(
+                    itertools.product(
+                        range(len(entry["peptide"].x)), range(len(entry["mhc"].x))
+                    )
+                ),
                 dtype=torch.int32,
             )
             entry["peptide", "determines", "mhc"].edge_index = edges.T
@@ -61,13 +67,15 @@ def get_hetero_data(peptide_df, mhcs, max_n_peptides):
     return data
 
 
-def load_weights(model, gnn_weight_path):
-    state_dict = torch.load(gnn_weight_path, weights_only=True, map_location=torch.device("cpu"))
+def load_weights(model: Module, gnn_weight_path):
+    state_dict = torch.load(
+        gnn_weight_path, weights_only=True, map_location=torch.device("cpu")
+    )
     model.load_state_dict(state_dict, strict=True)
     return model
 
 
-def create_typing_summary(typing_df):
+def create_typing_summary(typing_df: pd.DataFrame) -> pd.DataFrame:
     """
     Create a typing summary DataFrame in the format: sample, alleles
     with semicolon-separated alleles per sample.

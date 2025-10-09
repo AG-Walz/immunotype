@@ -10,7 +10,8 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 authors = [
-    {name = "immunotype contributors"}
+    {name = "Matteo Pilz"},
+    {name = "Jonas Scheid"}
 ]
 keywords = ["immunopeptidomics", "HLA", "typing", "peptides", "machine learning", "bioinformatics"]
 classifiers = [
@@ -33,21 +34,18 @@ dependencies = [
     "torch>=2.0.0",
     "torch-geometric>=2.3.0",
     "tqdm>=4.64.0",
-    "rich-click>=1.6.0",
-    "pathlib",
+    "rich-click>=1.6.0"
 ]
 
 [project.optional-dependencies]
 app = [
-    "gradio>=4.0.0",
-    "seaborn>=0.11.0",
+    "gradio>=4.0.0"
 ]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
-    "pre-commit>=3.0.0",
-    "types-seaborn",
+    "pre-commit>=3.0.0"
 ]
 all = [
     "immunotype[dev,app]"
@@ -55,7 +53,6 @@ all = [
 
 [project.urls]
 Homepage = "https://github.com/immunotype/immunotype"
-Documentation = "https://github.com/immunotype/immunotype#readme"
 Repository = "https://github.com/immunotype/immunotype.git"
 Issues = "https://github.com/immunotype/immunotype/issues"
 
@@ -96,16 +93,3 @@ markers = [
 [tool.coverage.run]
 source = ["src"]
 branch = true
-
-[tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "if self.debug:",
-    "if __name__ == .__main__.:",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if 0:",
-    "if False:",
-]
-
