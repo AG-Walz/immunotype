@@ -195,7 +195,7 @@ def predict(
                     .reset_index())
     else:
         # Create empty typing DataFrame with correct columns
-        typing = pd.DataFrame(columns=["sample", "locus", "allele"])
+        typing_df = pd.DataFrame(columns=["sample", "locus", "allele"])
         warnings.warn(
             f"Missing typing results, possibly due to insufficient input data. Use GNN or increase input size. ",
             stacklevel=2,
