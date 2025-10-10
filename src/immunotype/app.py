@@ -97,7 +97,7 @@ def update_allele_input(file):
 
 example_peptides = "\n".join(
     pd.read_csv(
-        PACKAGE_ROOT / "tests" / "examples" / "single_sample_input.tsv",
+        PACKAGE_ROOT / "examples" / "single_sample_input.tsv",
         header=None,
         sep="\t",
     )[0].values
@@ -125,6 +125,7 @@ def create_interface():
                             value=example_peptides,
                         )
                         peptide_file_input = gr.File(label="Peptides input", height=140)
+                        _ = gr.ClearButton([peptide_input, peptide_file_input])
                     with gr.Accordion("Additional settings", open=False):
                         with gr.Row():
                             model_toggle = gr.Radio(
@@ -145,6 +146,7 @@ def create_interface():
                             allele_file_input = gr.File(
                                 label="HLA allele input", height=140
                             )
+                            _ = gr.ClearButton([allele_input, allele_file_input])
                         n_peptides_slider = gr.Slider(
                             1_000,
                             100_000,
