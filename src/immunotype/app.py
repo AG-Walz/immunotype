@@ -11,8 +11,6 @@ Usage:
 
 from pathlib import Path
 
-from numpy import bool_
-
 import gradio as gr
 import pandas as pd
 import torch
@@ -97,7 +95,13 @@ def update_allele_input(file):
     return gr.update(value=alleles)
 
 
-example_peptides = "ALDGRETD\nASDSGKYL\nAVDPTSGQ\nDISQTSKY\nDSDINNRL"
+example_peptides = "\n".join(
+    pd.read_csv(
+        PACKAGE_ROOT / "tests" / "examples" / "single_sample_input.tsv",
+        header=None,
+        sep="\t",
+    )[0].values
+)
 
 example_alleles = "\n".join(
     pd.read_csv(PACKAGE_ROOT / "data" / "selected_alleles.csv", header=None)[0].values
@@ -133,7 +137,8 @@ def create_interface():
                         with gr.Group():
                             allele_input = gr.Textbox(
                                 label="HLA allele input",
-                                info="Alleles need to be separated by newlines.",
+                                info="Alleles need to be separated by newlines."
+                                + "Important: changing which alleles to predict is not recommended, see the help tab for further information.",
                                 lines=20,
                                 value=example_alleles,
                             )
