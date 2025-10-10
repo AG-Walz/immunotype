@@ -53,7 +53,7 @@ def output_file(tmp_path):
 @pytest.fixture
 def mock_model_weights(tmp_path):
     """Mock model weights file for testing."""
-    weights_file = tmp_path / "mock_weights.pth"
+    weights_file = tmp_path / "mock_weights.pt"
     weights_file.write_text("mock weights")
     return weights_file
 

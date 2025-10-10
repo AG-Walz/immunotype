@@ -84,7 +84,7 @@ def show_banner():
 @click.option(
     "--gnn-weight-path",
     type=click.Path(path_type=Path),
-    default=PACKAGE_ROOT / "weights" / "gnn_model_weights.pth",
+    default=PACKAGE_ROOT / "weights" / "gnn_model_weights.pt",
     help="Path to GNN model weights file.",
     show_default=True,
 )
@@ -112,7 +112,9 @@ def main(
 
     # Validate that at least one method is enabled
     if no_gnn and no_lookup:
-        click.secho("❌ Error: Cannot disable both GNN and lookup methods!", fg="red", err=True)
+        click.secho(
+            "❌ Error: Cannot disable both GNN and lookup methods!", fg="red", err=True
+        )
         raise click.Abort()
 
     # Load and process peptide data
@@ -125,21 +127,31 @@ def main(
         peptide_df.columns = ["peptide"]
         peptide_df["sample"] = 0  # All peptides belong to sample 0
         is_multi_sample = False
-        click.secho(f"✅ Loaded {len(peptide_df)} peptides (single sample) from {input}", fg="green")
+        click.secho(
+            f"✅ Loaded {len(peptide_df)} peptides (single sample) from {input}",
+            fg="green",
+        )
 
     elif input_df.shape[1] == 2:
         # Two column format (like dataset.tsv): sample_id, peptide
         peptide_df = input_df.copy()
         if str(input_df.iloc[0, 0]).lower() in ["sample", "sample_id", "id"]:
             # Has header, skip first row
-            peptide_df = pd.DataFrame(input_df.iloc[1:].values, columns=["sample", "peptide"])
+            peptide_df = pd.DataFrame(
+                input_df.iloc[1:].values, columns=["sample", "peptide"]
+            )
         else:
             # No header, assign column names
             peptide_df.columns = ["sample", "peptide"]
         is_multi_sample = True
-        click.secho(f"✅ Loaded {len(peptide_df)} peptides from {len(peptide_df['sample'].unique())} samples from {input}", fg="green")
+        click.secho(
+            f"✅ Loaded {len(peptide_df)} peptides from {len(peptide_df['sample'].unique())} samples from {input}",
+            fg="green",
+        )
     else:
-        raise ValueError(f"Unsupported input format. Expected 1 or 2 columns, got {input_df.shape[1]}")
+        raise ValueError(
+            f"Unsupported input format. Expected 1 or 2 columns, got {input_df.shape[1]}"
+        )
 
     # Make sure columns are correct types
     peptide_df["sample"] = peptide_df["sample"].astype(str)
@@ -147,7 +159,10 @@ def main(
     # Load HLA alleles
     try:
         selected_alleles = pd.read_csv(hla_input, header=None)[0].values
-        click.secho(f"✅ Loaded {len(selected_alleles)} HLA alleles from {hla_input}", fg="green")
+        click.secho(
+            f"✅ Loaded {len(selected_alleles)} HLA alleles from {hla_input}",
+            fg="green",
+        )
     except Exception as e:
         click.secho(f"❌ Error loading HLA file: {e}", fg="red", err=True)
         raise click.Abort()

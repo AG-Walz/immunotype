@@ -47,7 +47,7 @@ def submit(peptides, alleles, max_n_peptides, model_to_use):
         use_gnn=use_gnn,
         use_lookup=use_lookup,
         max_n_peptides=max_n_peptides,
-        gnn_weight_path=PACKAGE_ROOT / "weights" / "gnn_model_weights.pth",
+        gnn_weight_path=PACKAGE_ROOT / "weights" / "gnn_model_weights.pt",
     )
     typing_df = (
         typing_df[["sample", "allele"]]
@@ -59,7 +59,9 @@ def submit(peptides, alleles, max_n_peptides, model_to_use):
     typing_df.to_csv(typing_path, index=False)
 
     probabilities_path = "probabilities.csv"
-    probability_df.to_csv(probabilities_path, index=False, float_format=f"%.{DECIMAL_PRECISION}f")
+    probability_df.to_csv(
+        probabilities_path, index=False, float_format=f"%.{DECIMAL_PRECISION}f"
+    )
 
     return (
         typing_df,
@@ -228,6 +230,7 @@ def create_interface():
             """)
 
     return demo
+
 
 # Main function to launch the app via CLI
 def main():

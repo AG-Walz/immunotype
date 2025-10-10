@@ -47,12 +47,18 @@ def predict_lookup(
     )
     # Apply cube root transformation to counts to improve homozygous detection
     lookup_score_df["probability"] = np.cbrt(lookup_score_df["count"])
-    lookup_score_df["probability"] = lookup_score_df.groupby(["sample", "locus"])["probability"].transform(lambda x: x / x.max())
+    lookup_score_df["probability"] = lookup_score_df.groupby(["sample", "locus"])[
+        "probability"
+    ].transform(lambda x: x / x.max())
     # Reshape df uniformly
     index = pd.MultiIndex.from_tuples(
-                [[sample, allele[4], allele] for sample in peptide_df["sample"].unique() for allele in selected_alleles],
-                names=["sample", "locus", "allele"],
-            )
+        [
+            [sample, allele[4], allele]
+            for sample in peptide_df["sample"].unique()
+            for allele in selected_alleles
+        ],
+        names=["sample", "locus", "allele"],
+    )
     lookup_score_df = (
         lookup_score_df.set_index(["sample", "locus", "allele"])
         .reindex(index)
@@ -74,7 +80,12 @@ def predict_lookup(
     return lookup_score_df
 
 
-def predict_model(peptide_df: pd.DataFrame, selected_alleles: pd.Series, batch_size: int, max_n_peptides: int) -> pd.DataFrame:
+def predict_model(
+    peptide_df: pd.DataFrame,
+    selected_alleles: pd.Series,
+    batch_size: int,
+    max_n_peptides: int,
+) -> pd.DataFrame:
     """
     Predict binding probabilities using the GNN model.
 
@@ -126,7 +137,7 @@ def prepare_data(
     """Prepare data and load model weights."""
 
     if gnn_weight_path is None:
-        gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pth"
+        gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pt"
 
     if use_gnn:
         global model, mhc_features
@@ -174,7 +185,7 @@ def predict(
         tuple[pd.DataFrame, pd.DataFrame]:
             - pred_df: DataFrame with binding probabilities for each peptide and allele.
             - typing: DataFrame with predicted HLA typing (top 2 alleles per locus).
-"""
+    """
     if not use_gnn and not use_lookup:
         raise ValueError("Must use GNN or lookup or both")
 
