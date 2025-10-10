@@ -84,7 +84,7 @@ def show_banner():
 @click.option(
     "--gnn-weight-path",
     type=click.Path(path_type=Path),
-    default=PACKAGE_ROOT / "weights" / "gnn_model_weights.pth",
+    default=PACKAGE_ROOT / "weights" / "gnn_model_weights.pt",
     help="Path to GNN model weights file.",
     show_default=True,
 )
@@ -112,80 +112,79 @@ def main(
 
     # Validate that at least one method is enabled
     if no_gnn and no_lookup:
-        click.secho("❌ Error: Cannot disable both GNN and lookup methods!", fg="red", err=True)
+        click.secho(
+            "❌ Error: Cannot disable both GNN and lookup methods!", fg="red", err=True
+        )
         raise click.Abort()
 
     # Load and process peptide data
-    try:
-        # First, try to read the file to determine its structure
-        raw_df = pd.read_csv(input, sep="\t", header=None)
+    input_df = pd.read_csv(input, sep="\t", header=None)
 
-        # Determine input type based on structure
-        if raw_df.shape[1] == 1:
-            # Single column peptide list (like peptide_list.tsv)
-            peptide_df = raw_df.copy()
-            peptide_df.columns = ["peptide"]
-            peptide_df["sample"] = 0  # All peptides belong to sample 0
-            is_multi_sample = False
-            click.secho(
-                f"✅ Loaded {len(peptide_df)} peptides (single sample) from {input}", fg="green"
-            )
-        elif raw_df.shape[1] == 2:
-            # Two column format (like dataset.tsv): sample_id, peptide
-            peptide_df = raw_df.copy()
-            if str(raw_df.iloc[0, 0]).lower() in ["sample", "sample_id", "id"]:
-                # Has header, skip first row
-                peptide_df = pd.DataFrame(raw_df.iloc[1:].values, columns=["sample", "peptide"])
-            else:
-                # No header, assign column names
-                peptide_df.columns = ["sample", "peptide"]
-            is_multi_sample = True
-            click.secho(
-                f"✅ Loaded {len(peptide_df)} peptides from {len(peptide_df['sample'].unique())} samples from {input}",
-                fg="green",
+    # Determine input type based on structure
+    if input_df.shape[1] == 1:
+        # Single column peptide list (like peptide_list.tsv)
+        peptide_df = input_df.copy()
+        peptide_df.columns = ["peptide"]
+        peptide_df["sample"] = 0  # All peptides belong to sample 0
+        is_multi_sample = False
+        click.secho(
+            f"✅ Loaded {len(peptide_df)} peptides (single sample) from {input}",
+            fg="green",
+        )
+
+    elif input_df.shape[1] == 2:
+        # Two column format (like dataset.tsv): sample_id, peptide
+        peptide_df = input_df.copy()
+        if str(input_df.iloc[0, 0]).lower() in ["sample", "sample_id", "id"]:
+            # Has header, skip first row
+            peptide_df = pd.DataFrame(
+                input_df.iloc[1:].values, columns=["sample", "peptide"]
             )
         else:
-            raise ValueError(
-                f"Unsupported input format. Expected 1 or 2 columns, got {raw_df.shape[1]}"
-            )
+            # No header, assign column names
+            peptide_df.columns = ["sample", "peptide"]
+        is_multi_sample = True
+        click.secho(
+            f"✅ Loaded {len(peptide_df)} peptides from {len(peptide_df['sample'].unique())} samples from {input}",
+            fg="green",
+        )
+    else:
+        raise ValueError(
+            f"Unsupported input format. Expected 1 or 2 columns, got {input_df.shape[1]}"
+        )
 
-        peptide_df["sample"] = peptide_df["sample"].astype(str)
-
-    except Exception as e:
-        click.secho(f"❌ Error loading peptide file: {e}", fg="red", err=True)
-        raise click.Abort()
+    # Make sure columns are correct types
+    peptide_df["sample"] = peptide_df["sample"].astype(str)
 
     # Load HLA alleles
     try:
         selected_alleles = pd.read_csv(hla_input, header=None)[0].values
-        click.secho(f"✅ Loaded {len(selected_alleles)} HLA alleles from {hla_input}", fg="green")
+        click.secho(
+            f"✅ Loaded {len(selected_alleles)} HLA alleles from {hla_input}",
+            fg="green",
+        )
     except Exception as e:
         click.secho(f"❌ Error loading HLA file: {e}", fg="red", err=True)
         raise click.Abort()
 
     # Make predictions
-    try:
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            pred_df, typing = predict(
-                peptide_df=peptide_df,
-                selected_alleles=selected_alleles,
-                use_gnn=not no_gnn,
-                use_lookup=not no_lookup,
-                batch_size=batch_size,
-                max_n_peptides=max_n_peptides,
-                gnn_weight_path=gnn_weight_path,
-            )
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        pred_df, typing = predict(
+            peptide_df=peptide_df,
+            selected_alleles=selected_alleles,
+            use_gnn=not no_gnn,
+            use_lookup=not no_lookup,
+            batch_size=batch_size,
+            max_n_peptides=max_n_peptides,
+            gnn_weight_path=gnn_weight_path,
+        )
 
-            # Show any warnings
-            click.secho("\n")
-            for warning in w:
-                click.secho(f"⚠️  {warning.message}", fg="yellow")
-            click.secho("\n")
-
-    except Exception as e:
-        click.secho(f"❌ Error during prediction: {e}", fg="red", err=True)
-        raise click.Abort()
+        # Show any warnings
+        click.secho("\n")
+        for warning in w:
+            click.secho(f"⚠️  {warning.message}", fg="yellow")
+        click.secho("\n")
 
     if is_multi_sample:
         typing_summary = create_typing_summary(typing)

@@ -50,6 +50,15 @@ def predict_lookup(
     lookup_score_df["probability"] = lookup_score_df.groupby(["sample", "locus"])[
         "probability"
     ].transform(lambda x: x / x.max())
+    # Reshape df uniformly
+    index = pd.MultiIndex.from_tuples(
+        [
+            [sample, allele[4], allele]
+            for sample in peptide_df["sample"].unique()
+            for allele in selected_alleles
+        ],
+        names=["sample", "locus", "allele"],
+    )
     lookup_score_df = (
         lookup_score_df.set_index(["sample", "locus", "allele"])
         .reindex(index)
@@ -74,10 +83,22 @@ def predict_lookup(
 def predict_model(
     peptide_df: pd.DataFrame,
     selected_alleles: pd.Series,
-    batch_size: int = 1,
-    max_n_peptides: int = 50_000,
+    batch_size: int,
+    max_n_peptides: int,
 ) -> pd.DataFrame:
-    """Predict binding probabilities using the GNN model."""
+    """
+    Predict binding probabilities using the GNN model.
+
+    Args:
+        peptide_df (pd.DataFrame): DataFrame containing peptide information.
+        selected_alleles (pd.Series): Series of selected HLA alleles for prediction.
+        batch_size (int): Number of samples per batch for model inference.
+        max_n_peptides (int): Maximum number of peptides to process.
+
+    Returns:
+        pd.DataFrame: DataFrame with columns ['sample', 'allele', 'probability', 'locus'] containing
+            the predicted HLA type probabilities for each sample-allele pair and the corresponding locus.
+    """
 
     selected_mhc_features = mhc_features[mhc_df["allele"].isin(selected_alleles)]
     data = get_hetero_data(peptide_df, selected_mhc_features, max_n_peptides)
@@ -116,7 +137,7 @@ def prepare_data(
     """Prepare data and load model weights."""
 
     if gnn_weight_path is None:
-        gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pth"
+        gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pt"
 
     if use_gnn:
         global model, mhc_features
@@ -147,9 +168,24 @@ def predict(
     batch_size: int = 1,
     max_n_peptides: int = 50_000,
     gnn_weight_path=None,
-):
-    """Predict binding probabilities and HLA typing."""
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Predict binding probabilities and HLA typing for given peptides and alleles.
 
+    Args:
+        peptide_df (pd.DataFrame): DataFrame containing peptide information.
+        selected_alleles (pd.Series): Series of selected alleles for prediction.
+        use_gnn (bool): Whether to use the GNN model for prediction. Defaults to True.
+        use_lookup (bool): Whether to use the lookup table for prediction. Defaults to True.
+        batch_size (int, optional): Batch size for GNN model prediction. Defaults to 1.
+        max_n_peptides (int, optional): Maximum number of peptides to process. Defaults to 50,000.
+        gnn_weight_path (str or None, optional): Path to GNN model weights. Defaults loads from package
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame]:
+            - pred_df: DataFrame with binding probabilities for each peptide and allele.
+            - typing: DataFrame with predicted HLA typing (top 2 alleles per locus).
+    """
     if not use_gnn and not use_lookup:
         raise ValueError("Must use GNN or lookup or both")
 
@@ -160,6 +196,7 @@ def predict(
     if (use_gnn and model is None) or (use_lookup and lookup_db is None):
         prepare_data(use_gnn, use_lookup, gnn_weight_path)
 
+    # Get predictions
     probabilities = {}
 
     if use_gnn:
@@ -179,6 +216,7 @@ def predict(
             suffixes=["_model", "_lookup"],
         ).fillna(0)
 
+        # Apply ensemble weighting
         pred_df["probability"] = pred_df.apply(
             lambda x: (
                 x["probability_model"] * (w := ENSEMBLE_MODEL_WEIGHTS[x["locus"]])
@@ -199,6 +237,7 @@ def predict(
         ]
     else:
         pred_df = list(probabilities.values())[0]
+        pred_df = pred_df[["sample", "locus", "allele", "probability"]]
 
     pred_df = pred_df.sort_values(["sample", "locus", "allele"])
 

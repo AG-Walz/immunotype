@@ -58,6 +58,7 @@ Issues = "https://github.com/immunotype/immunotype/issues"
 
 [project.scripts]
 immunotype = "immunotype.cli:main"
+immunotype-app = "immunotype.app:main"
 
 # Tool configurations
 [tool.hatch.build.targets.wheel]
@@ -69,7 +70,7 @@ include = [
     "/tests",
     "/README.md",
     "/LICENSE",
-    "/pyproject.toml",
+    "/pyproject.toml"
 ]
 
 [tool.pytest.ini_options]
