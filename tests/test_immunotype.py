@@ -36,7 +36,9 @@ class TestImmunotype:
         assert "probability" in result.columns
         assert "sample" in result.columns
 
-    def test_predict_with_lookup_only(self, sample_peptides, sample_alleles, monkeypatch):
+    def test_predict_with_lookup_only(
+        self, sample_peptides, sample_alleles, monkeypatch
+    ):
         """Test prediction using only lookup method."""
         # Mock lookup database
         mock_lookup_db = pd.DataFrame(

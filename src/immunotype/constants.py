@@ -1,4 +1,6 @@
 import numpy as np
+from pathlib import Path
+import pandas as pd
 
 # ASCII art banner for the application
 ASCII_BANNER = """    _                                       __
@@ -10,6 +12,9 @@ ASCII_BANNER = """    _                                       __
 
 # Authors information
 __authors__ = ["Matteo Pilz", "Jonas Scheid"]
+
+# Get package root directory
+PACKAGE_ROOT = Path(__file__).parent
 
 # B, Z, X, J are ambiguous amino acids
 # ? is an unknown amino acid
@@ -49,4 +54,10 @@ TOKEN_VOCABULARY = dict(zip(TOKENS, range(1, len(TOKENS) + 1), strict=True))
 
 
 LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.55, "B": 0.4, "C": 0.425}
-ENSEMBLE_MODEL_WEIGHTS = {"A": 0.6, "B": 0.7, "C": 1.0}
+ENSEMBLE_GNN_WEIGHTS = {"A": 0.6, "B": 0.7, "C": 1.0}
+
+# MHC_SEQUENCE_DF stores the MHC sequences together with their identifier
+MHC_SEQUENCE_DF = pd.read_csv(PACKAGE_ROOT / "data" / "mhc_sequences.csv")
+
+# LOOKUP_Df stores all unique peptide-HLA combinations with their locus
+LOOKUP_DF = pd.read_csv(PACKAGE_ROOT / "data" / "lookup_db.csv")
