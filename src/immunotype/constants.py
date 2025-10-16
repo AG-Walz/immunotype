@@ -61,3 +61,5 @@ MHC_SEQUENCE_DF = pd.read_csv(PACKAGE_ROOT / "data" / "mhc_sequences.csv")
 
 # LOOKUP_Df stores all unique peptide-HLA combinations with their locus
 LOOKUP_DF = pd.read_csv(PACKAGE_ROOT / "data" / "lookup_db.csv")
+
+PREDICTION_MODELS = ["Ensemble", "GNN", "Lookup"]

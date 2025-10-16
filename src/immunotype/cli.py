@@ -5,8 +5,7 @@ from pathlib import Path
 import pandas as pd
 import rich_click as click
 
-from .constants import ASCII_BANNER
-from .constants import __authors__
+from .constants import __authors__,ASCII_BANNER, PREDICTION_MODELS
 from .immunotype import predict
 from .utils import parse_peptide_input, parse_allele_input
 
@@ -76,8 +75,8 @@ def show_banner():
 )
 @click.option(
     "--prediction_model",
-    default="Ensemble",
-    type=str,
+    default="ensemble",
+    type=click.Choice([model.lower() for model in PREDICTION_MODELS], case_sensitive=True),
     help="Disable the pre-trained GNN model.",
     show_default=True,
 )

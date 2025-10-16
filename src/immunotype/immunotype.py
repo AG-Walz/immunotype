@@ -12,7 +12,7 @@ from .constants import (
     ENSEMBLE_GNN_WEIGHTS,
     LOOKUP_HOMOZYGOUS_THRESHOLDS,
     LOOKUP_DF,
-    PLACEHOLDERS,
+    PLACEHOLDERS
 )
 from .model import GNN
 from .utils import get_hetero_data, load_weights
@@ -274,7 +274,7 @@ def predict_ensemble(
 def predict(
     peptide_df: pd.DataFrame,
     allele_df: pd.DataFrame,
-    prediction_model: str = "Ensemble",
+    prediction_model: str = "ensemble",
     batch_size: int = 1,
     max_n_peptides: int = 50_000,
     gnn_weight_path: str | None = None,
@@ -300,13 +300,13 @@ def predict(
             - typing_df: DataFrame with predicted HLA typing (top 2 alleles per locus).
     """
 
-    if prediction_model == "Ensemble":
+    if prediction_model == "ensemble":
         pred_df, typing_df = predict_ensemble(
             peptide_df, allele_df, batch_size, max_n_peptides, gnn_weight_path, device
         )
-    elif prediction_model == "Lookup":
+    elif prediction_model == "lookup":
         pred_df, typing_df = predict_lookup(peptide_df, allele_df)
-    elif prediction_model == "GNN":
+    elif prediction_model == "gnn":
         pred_df, typing_df = predict_model(
             peptide_df, allele_df, batch_size, max_n_peptides, gnn_weight_path, device
         )

@@ -16,6 +16,7 @@ import pandas as pd
 
 from immunotype.utils import parse_peptide_input, parse_allele_input
 from immunotype.immunotype import predict
+from immunotype.constants import PREDICTION_MODELS
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
@@ -37,7 +38,7 @@ def submit(peptides: str, alleles: str, max_n_peptides: int, prediction_model: s
     probability_df, typing_df = predict(
         peptide_df,
         allele_df,
-        prediction_model=prediction_model,
+        prediction_model=prediction_model.lower(),
         max_n_peptides=max_n_peptides,
     )
 
@@ -123,7 +124,7 @@ def create_interface():
                     with gr.Accordion("Additional settings", open=False):
                         with gr.Row():
                             model_toggle = gr.Radio(
-                                choices=["Ensemble", "GNN", "Lookup"],
+                                choices=PREDICTION_MODELS,
                                 value="Ensemble",
                                 label="Select which model to use",
                                 info="Ensemble uses both, the pre-trained graph neural network and the peptide-HLA lookup table. "
