@@ -9,18 +9,20 @@ Usage:
     python app.py  # Launch directly
 """
 
+import warnings
+import html
+
 from pathlib import Path
 
 import gradio as gr
 import pandas as pd
-import torch
 
+from immunotype.utils import parse_peptide_input, parse_allele_input
 from immunotype.immunotype import predict
+from immunotype.constants import PREDICTION_MODELS
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
-
-DEVICE = torch.device("cpu")
 
 # number of decimals shown and in export
 DECIMAL_PRECISION = 4
@@ -29,38 +31,43 @@ typing_df = None
 probability_df = None
 
 
-def submit(peptides, alleles, max_n_peptides, model_to_use):
-    use_gnn = model_to_use != "Lookup"
-    use_lookup = model_to_use != "GNN"
+def submit(peptides: str, alleles: str, max_n_peptides: int, prediction_model: str):
+    """Executes the script by pressing the submit button."""
     global typing_df, probability_df
 
-    peptide_df = pd.DataFrame(
-        peptides.replace("\n", ",").split(","), columns=["peptide"]
-    )
-    peptide_df["sample"] = 0
-    alleles = pd.Series(alleles.replace("\n", ",").split(","))
-    probability_df, typing_df = predict(
-        peptide_df,
-        alleles,
-        use_gnn=use_gnn,
-        use_lookup=use_lookup,
-        max_n_peptides=max_n_peptides,
-        gnn_weight_path=PACKAGE_ROOT / "weights" / "gnn_model_weights.pt",
-    )
-    typing_df = (
-        typing_df[["sample", "allele"]]
-        .groupby("sample")["allele"]
-        .apply(lambda x: ";".join(x.sort_values(ascending=True)))
-    ).reset_index()
+    try:
+        peptide_df = parse_peptide_input(peptides)
+        allele_df = parse_allele_input(alleles)
 
-    typing_path = "typing.csv"
-    typing_df.to_csv(typing_path, index=False)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.filterwarnings(
+                "ignore",
+                message="The PyTorch API of nested tensors is in prototype stage and will change in the near future. "
+                + "We recommend specifying layout=torch.jagged when constructing a nested tensor, "
+                + "as this layout receives active development, has better operator coverage, and works with torch.compile.",
+            )
+            probability_df, typing_df = predict(
+                peptide_df,
+                allele_df,
+                prediction_model=prediction_model.lower(),
+                max_n_peptides=max_n_peptides,
+                progress=gr.Progress().tqdm,
+            )
+            for warning in w:
+                gr.Warning(html.escape(str(warning.message)), duration=None)
+    except Exception as e:
+        raise gr.Error(html.escape(str(e)), duration=None)
 
-    probabilities_path = "probabilities.csv"
+    typing_path = "typing.tsv"
+    typing_df.to_csv(typing_path, index=False, sep="\t")
+
+    probabilities_path = "probabilities.tsv"
     probability_df.to_csv(
-        probabilities_path, index=False, float_format=f"%.{DECIMAL_PRECISION}f"
+        probabilities_path,
+        index=False,
+        float_format=f"%.{DECIMAL_PRECISION}f",
+        sep="\t",
     )
-
     return (
         typing_df,
         update_probability_output(),
@@ -70,6 +77,7 @@ def submit(peptides, alleles, max_n_peptides, model_to_use):
 
 
 def update_probability_output():
+    """Format the probability output prediction."""
     global probability_df
     style = probability_df.style.format(
         precision=DECIMAL_PRECISION
@@ -77,7 +85,8 @@ def update_probability_output():
     return style
 
 
-def sort_table(col):
+def sort_table(col: str):
+    """Sort the table by col."""
     global probability_df
     probability_df = probability_df.sort_values(
         by=col, ascending=(col != "probability")
@@ -85,12 +94,14 @@ def sort_table(col):
     return update_probability_output()
 
 
-def update_peptide_input(file):
+def update_peptide_input(file: str):
+    """Update the peptide input shown in the text field."""
     peptides = "\n".join(pd.read_csv(file, header=None).iloc[:, 0].values)
     return gr.update(value=peptides)
 
 
-def update_allele_input(file):
+def update_allele_input(file: str):
+    """Update the allele input shown in the text field."""
     alleles = "\n".join(pd.read_csv(file, header=None).iloc[:, 0].values)
     return gr.update(value=alleles)
 
@@ -110,7 +121,7 @@ example_alleles = "\n".join(
 
 def create_interface():
     """Create the Gradio interface."""
-    with gr.Blocks(title="immunotype", theme=gr.themes.Soft()) as demo:
+    with gr.Blocks(title="immunotype", theme=gr.themes.Soft()) as app:
         gr.Markdown("# 🧬 immunotype")
         gr.Markdown("Peptide-based HLA typing from immunopeptidomics data")
 
@@ -129,7 +140,7 @@ def create_interface():
                     with gr.Accordion("Additional settings", open=False):
                         with gr.Row():
                             model_toggle = gr.Radio(
-                                choices=["Ensemble", "GNN", "Lookup"],
+                                choices=PREDICTION_MODELS,
                                 value="Ensemble",
                                 label="Select which model to use",
                                 info="Ensemble uses both, the pre-trained graph neural network and the peptide-HLA lookup table. "
@@ -236,7 +247,7 @@ def create_interface():
             If you use immunotype in your research, please cite TODO.
             """)
 
-    return demo
+    return app
 
 
 # Main function to launch the app via CLI

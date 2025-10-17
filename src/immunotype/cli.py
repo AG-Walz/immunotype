@@ -5,10 +5,9 @@ from pathlib import Path
 import pandas as pd
 import rich_click as click
 
-from .constants import ASCII_BANNER
-from .constants import __authors__
+from .constants import __authors__, ASCII_BANNER, PREDICTION_MODELS
 from .immunotype import predict
-from .utils import create_typing_summary
+from .utils import parse_peptide_input, parse_allele_input
 
 # Import version from package
 try:
@@ -24,6 +23,8 @@ click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
+
+DECIMAL_PRECISION = 4
 
 
 def show_banner():
@@ -44,14 +45,19 @@ def show_banner():
     epilog="For more information, visit: https://github.com/immunotype/immunotype",
 )
 @click.argument(
-    "input",
+    "peptide_input",
     type=click.Path(exists=True, path_type=Path),
     help="TSV input file. Either a single column of peptides or two columns with sample IDs and peptides.",
 )
 @click.argument(
-    "output",
+    "typing_output",
     type=click.Path(path_type=Path),
-    help="Path to save the typing output (format depends on input type).",
+    help="Path to save the typing output.",
+)
+@click.option(
+    "--prob_output",
+    type=click.Path(path_type=Path),
+    help="Save detailed HLA probabilities to specified TSV file.",
 )
 @click.option(
     "--hla-input",
@@ -61,44 +67,29 @@ def show_banner():
     show_default=True,
 )
 @click.option(
-    "--out_probs",
-    type=click.Path(path_type=Path),
-    help="Save detailed HLA probabilities to specified TSV file.",
-)
-@click.option(
-    "--batch-size",
-    default=1,
-    type=int,
-    help="Number of samples to predict simultaneously.",
-    show_default=True,
-)
-@click.option(
     "--max-n-peptides",
-    default=10_000,
+    default=50_000,
     type=int,
     help="Maximum number of peptides to predict at once.",
     show_default=True,
 )
-@click.option("--no-gnn", is_flag=True, help="Disable the pre-trained GNN model.")
-@click.option("--no-lookup", is_flag=True, help="Disable the lookup table.")
 @click.option(
-    "--gnn-weight-path",
-    type=click.Path(path_type=Path),
-    default=PACKAGE_ROOT / "weights" / "gnn_model_weights.pt",
-    help="Path to GNN model weights file.",
+    "--prediction_model",
+    default="ensemble",
+    type=click.Choice(
+        [model.lower() for model in PREDICTION_MODELS], case_sensitive=True
+    ),
+    help="Disable the pre-trained GNN model.",
     show_default=True,
 )
 @click.version_option(version=__version__, prog_name="immunotype")
 def main(
-    input: Path,
+    peptide_input: Path,
     hla_input: Path,
-    output: Path,
-    out_probs: Path,
-    batch_size: int,
+    typing_output: Path,
+    prob_output: Path,
     max_n_peptides: int,
-    no_gnn: bool,
-    no_lookup: bool,
-    gnn_weight_path: Path,
+    prediction_model: str,
 ):
     """
     Predict HLA typing from peptide sequences using immunotype.
@@ -110,74 +101,37 @@ def main(
     # Show the ASCII banner
     show_banner()
 
-    # Validate that at least one method is enabled
-    if no_gnn and no_lookup:
-        click.secho(
-            "❌ Error: Cannot disable both GNN and lookup methods!", fg="red", err=True
-        )
-        raise click.Abort()
-
     # Load and process peptide data
-    input_df = pd.read_csv(input, sep="\t", header=None)
+    with open(peptide_input, "r") as file:
+        peptide_df = parse_peptide_input(file.read())
 
-    # Determine input type based on structure
-    if input_df.shape[1] == 1:
-        # Single column peptide list (like peptide_list.tsv)
-        peptide_df = input_df.copy()
-        peptide_df.columns = ["peptide"]
-        peptide_df["sample"] = 0  # All peptides belong to sample 0
-        is_multi_sample = False
-        click.secho(
-            f"✅ Loaded {len(peptide_df)} peptides (single sample) from {input}",
-            fg="green",
-        )
-
-    elif input_df.shape[1] == 2:
-        # Two column format (like dataset.tsv): sample_id, peptide
-        peptide_df = input_df.copy()
-        if str(input_df.iloc[0, 0]).lower() in ["sample", "sample_id", "id"]:
-            # Has header, skip first row
-            peptide_df = pd.DataFrame(
-                input_df.iloc[1:].values, columns=["sample", "peptide"]
-            )
-        else:
-            # No header, assign column names
-            peptide_df.columns = ["sample", "peptide"]
-        is_multi_sample = True
-        click.secho(
-            f"✅ Loaded {len(peptide_df)} peptides from {len(peptide_df['sample'].unique())} samples from {input}",
-            fg="green",
-        )
-    else:
-        raise ValueError(
-            f"Unsupported input format. Expected 1 or 2 columns, got {input_df.shape[1]}"
-        )
-
-    # Make sure columns are correct types
-    peptide_df["sample"] = peptide_df["sample"].astype(str)
+    click.secho(
+        f"✅ Loaded {len(peptide_df)} peptides from {len(peptide_df['sample'].unique())} samples from {peptide_input}",
+        fg="green",
+    )
 
     # Load HLA alleles
-    try:
-        selected_alleles = pd.read_csv(hla_input, header=None)[0].values
-        click.secho(
-            f"✅ Loaded {len(selected_alleles)} HLA alleles from {hla_input}",
-            fg="green",
-        )
-    except Exception as e:
-        click.secho(f"❌ Error loading HLA file: {e}", fg="red", err=True)
-        raise click.Abort()
+    with open(hla_input, "r") as file:
+        allele_df = parse_allele_input(file.read())
+
+    click.secho(
+        f"✅ Loaded {len(allele_df)} HLA alleles from {hla_input}",
+        fg="green",
+    )
 
     # Make predictions
     with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        pred_df, typing = predict(
+        warnings.filterwarnings(
+            "ignore",
+            message="The PyTorch API of nested tensors is in prototype stage and will change in the near future. "
+            + "We recommend specifying layout=torch.jagged when constructing a nested tensor, "
+            + "as this layout receives active development, has better operator coverage, and works with torch.compile.",
+        )
+        pred_df, typing_df = predict(
             peptide_df=peptide_df,
-            selected_alleles=selected_alleles,
-            use_gnn=not no_gnn,
-            use_lookup=not no_lookup,
-            batch_size=batch_size,
+            allele_df=allele_df,
+            prediction_model=prediction_model,
             max_n_peptides=max_n_peptides,
-            gnn_weight_path=gnn_weight_path,
         )
 
         # Show any warnings
@@ -186,26 +140,21 @@ def main(
             click.secho(f"⚠️  {warning.message}", fg="yellow")
         click.secho("\n")
 
-    if is_multi_sample:
-        typing_summary = create_typing_summary(typing)
-        typing_summary.to_csv(output, sep="\t", index=False)
-        click.secho(f"💾 Typing summary saved to {output}", fg="green")
-    else:
-        alleles = ";".join(sorted(typing["allele"].values))
-        with open(output, "w") as f:
-            f.write(alleles + "\n")
-        click.secho(f"💾 Typing saved to {output}", fg="green")
+    typing_df.to_csv(typing_output, sep="\t", index=False)
+    click.secho(f"💾 Typing saved to {typing_output}", fg="green")
 
-    if out_probs:
+    if prob_output:
         # Save detailed predictions (like example_prediction.tsv)
-        pred_df.to_csv(out_probs, sep="\t", index=False)
-        click.secho(f"💾 Probability details saved to {out_probs}", fg="green")
+        pred_df.to_csv(
+            prob_output, sep="\t", index=False, float_format=f"%.{DECIMAL_PRECISION}f"
+        )
+        click.secho(f"💾 Probability details saved to {prob_output}", fg="green")
 
     # Display results
     click.secho("\n🎯 Predicted HLA typing", fg="green")
-    for sample, group in typing.groupby("sample"):
-        alleles = ", ".join(sorted(group["allele"].values))
-        click.secho(f"   Sample {sample}: {alleles}", fg="cyan")
+    for _, (s, typing) in typing_df.iterrows():
+        typing_print = ", ".join(typing.split(";"))
+        click.secho(f"   Sample {s}: {typing_print}", fg="cyan")
 
 
 if __name__ == "__main__":

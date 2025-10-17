@@ -94,7 +94,8 @@ class SequenceEncoder(Module):
         self.bn = BatchNorm(embedding_dim, allow_single_element=True)
 
     def forward(self, x, src_mask):
-        x = self.encoder(x, src_key_padding_mask=src_mask)[:, 0, :]
+        x = self.encoder(x, src_key_padding_mask=src_mask)
+        x = torch.select(x, dim=1, index=0)
         x = F.leaky_relu(self.bn(x))
         return x
 
@@ -102,23 +103,22 @@ class SequenceEncoder(Module):
 class GNN(Module):
     def __init__(
         self,
-        vocab_size=45,
-        embedding_dim=128,
-        dim_ff_enc_pep=128,
-        n_heads_enc_pep=8,
-        n_layers_enc_pep=6,
-        dim_ff_enc_mhc=1024,
-        n_heads_enc_mhc=8,
-        n_layers_enc_mhc=6,
-        n_heads_conv=8,
-        n_layers_conv=2,
-        dim_out_conv=32,
-        dropout=0.1,
-        act=F.leaky_relu,
+        vocab_size: int = 45,
+        embedding_dim: int = 128,
+        dim_ff_enc_pep: int = 128,
+        n_heads_enc_pep: int = 8,
+        n_layers_enc_pep: int = 6,
+        dim_ff_enc_mhc: int = 1024,
+        n_heads_enc_mhc: int = 8,
+        n_layers_enc_mhc: int = 6,
+        n_heads_conv: int = 8,
+        n_layers_conv: int = 2,
+        dim_out_conv: int = 32,
+        dropout: float = 0.1,
     ):
         super().__init__()
 
-        self.act = act
+        self.act = F.leaky_relu
 
         dim = n_heads_conv * dim_out_conv
 

@@ -28,5 +28,4 @@ venv/
 # Temporary output files
 *.log
 *.tmp
-probabilities.csv
 test-*.tsv

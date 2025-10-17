@@ -1,36 +1,77 @@
 import warnings
-from pathlib import Path
+
+from tqdm import tqdm
+from typing import TypeVar, Callable
+from tqdm.std import tqdm as TqdmType
 
 import numpy as np
 import pandas as pd
 import torch
 from torch_geometric.loader import DataLoader
-from tqdm import tqdm
+from pathlib import Path
 
 from .constants import (
-    ENSEMBLE_MODEL_WEIGHTS,
+    PACKAGE_ROOT,
+    ENSEMBLE_GNN_WEIGHTS,
     LOOKUP_HOMOZYGOUS_THRESHOLDS,
+    LOOKUP_DF,
     PLACEHOLDERS,
 )
 from .model import GNN
-from .utils import get_hetero_data, load_weights, tokenize
+from .utils import get_hetero_data, load_weights
 
-# Get package root directory
-PACKAGE_ROOT = Path(__file__).parent
+T = TypeVar("T")
 
-model = None
-mhc_df = pd.read_csv(PACKAGE_ROOT / "data" / "mhc_sequences.csv")
-mhc_features = None
-lookup_db = None
+
+def get_typing(pred_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get HLA typing per sample, based on predicted typing probabilities.
+
+    Args:
+        pred_df (pd.DataFrame): DataFrame containing predicted probabilities from Ensemble, Lookup or GNN.
+
+    Returns:
+        pd.DataFrame: DataFrame with predicted HLA typing (top 2 alleles per locus).
+    """
+    typing_df = pred_df.loc[pred_df["probability"] > 0]
+    typing_df = (
+        typing_df.groupby(["sample", "locus"])
+        .apply(
+            lambda x: x.sort_values(by="probability")["allele"].iloc[-2:],
+            include_groups=False,
+        )
+        .reset_index()
+    )
+    # filter out homozygous placeholder alleles
+    typing_df = typing_df.loc[~typing_df["allele"].str.contains("homozygous")]
+    typing_df = (
+        typing_df[["sample", "allele"]]
+        .groupby("sample")["allele"]
+        .apply(lambda x: ";".join(sorted(x)))
+    ).reset_index()
+    typing_df.columns = ["sample", "typing"]
+    return typing_df
 
 
 def predict_lookup(
-    peptide_df: pd.DataFrame, selected_alleles: pd.Series
-) -> pd.DataFrame:
-    """Predict binding probabilities using the lookup method."""
+    peptide_df: pd.DataFrame,
+    allele_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Predict HLA typing probabilities and HLA typing for given peptides and alleles using a lookup.
+
+    Args:
+        pred_df (pd.DataFrame): DataFrame with columns ['sample', 'peptide'] used for predicting the typing.
+        allele_df (pd.DataFrame): DataFrame with the column ['allele'], used to limit the prediction to the contained alleles.
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame]:
+            - pred_df: DataFrame with binding probabilities for each peptide and allele.
+            - typing_df: DataFrame with predicted HLA typing (top 2 alleles per locus).
+    """
 
     lookup_score_df = pd.merge(
-        lookup_db.loc[lookup_db["allele"].isin(selected_alleles)],
+        LOOKUP_DF.loc[LOOKUP_DF["allele"].isin(allele_df["allele"])],
         peptide_df,
         how="inner",
     )
@@ -38,7 +79,7 @@ def predict_lookup(
         [
             [s, allele[4], allele]
             for s in peptide_df["sample"].unique()
-            for allele in selected_alleles
+            for allele in allele_df["allele"].values
         ],
         names=["sample", "locus", "allele"],
     )
@@ -55,7 +96,7 @@ def predict_lookup(
         [
             [sample, allele[4], allele]
             for sample in peptide_df["sample"].unique()
-            for allele in selected_alleles
+            for allele in allele_df["allele"]
         ],
         names=["sample", "locus", "allele"],
     )
@@ -68,7 +109,7 @@ def predict_lookup(
 
     for s in lookup_score_df.index.get_level_values(0).unique():
         for p in PLACEHOLDERS:
-            if p in selected_alleles:
+            if p in allele_df["allele"]:
                 locus = p[4]
                 scores = lookup_score_df.loc[s, locus].loc[:, "count"]
                 lookup_score_df.loc[s, locus, p] = (
@@ -77,46 +118,84 @@ def predict_lookup(
                 ) * 1
 
     lookup_score_df = lookup_score_df.reset_index().drop("count", axis=1)
-    return lookup_score_df
+    if (lookup_score_df["probability"] > 0).sum() >= 3:
+        lookup_typing_df = get_typing(lookup_score_df)
+    else:
+        # Create empty typing DataFrame with correct columns
+        lookup_typing_df = pd.DataFrame(columns=["sample", "locus", "allele"])
+        warnings.warn(
+            f"Missing typing results from Lookup, possibly due to insufficient input data. Use GNN or increase input size.",
+            stacklevel=2,
+        )
+    return lookup_score_df, lookup_typing_df
 
 
 def predict_model(
     peptide_df: pd.DataFrame,
-    selected_alleles: pd.Series,
-    batch_size: int,
-    max_n_peptides: int,
-) -> pd.DataFrame:
+    allele_df: pd.DataFrame,
+    batch_size: int = 1,
+    max_n_peptides: int = 50_000,
+    gnn_weight_path: str | Path | None = None,
+    device: str = "cpu",
+    progress: Callable[[T], TqdmType] = tqdm,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Predict binding probabilities using the GNN model.
+    Predict HLA typing probabilities and HLA typing for given peptides and alleles using a GNN.
 
     Args:
         peptide_df (pd.DataFrame): DataFrame containing peptide information.
-        selected_alleles (pd.Series): Series of selected HLA alleles for prediction.
-        batch_size (int): Number of samples per batch for model inference.
-        max_n_peptides (int): Maximum number of peptides to process.
+        allele_df (pd.DataFrame): DataFrame with the columns ['allele', 'sequence'].
+            The sequences are being used as model input, only contained alleles are being predicted.
+        batch_size (int): Number of samples per batch for model inference. Defaults to 1.
+        max_n_peptides (int): Maximum number of peptides to process. Defaults to 50,000.
+        gnn_weight_path (str or None, optional): Path to GNN model weights. Defaults loads from package
+        device (str): Can be used to run the prediction on GPU. If no cuda device can be found, will default to 'cpu' instead.
+            Allowed parameters: 'cuda', 'cpu'. Defaults to 'cuda'.
 
     Returns:
-        pd.DataFrame: DataFrame with columns ['sample', 'allele', 'probability', 'locus'] containing
-            the predicted HLA type probabilities for each sample-allele pair and the corresponding locus.
+        tuple[pd.DataFrame, pd.DataFrame]:
+            - pred_df: DataFrame with binding probabilities for each peptide and allele.
+            - typing_df: DataFrame with predicted HLA typing (top 2 alleles per locus).
     """
 
-    selected_mhc_features = mhc_features[mhc_df["allele"].isin(selected_alleles)]
-    data = get_hetero_data(peptide_df, selected_mhc_features, max_n_peptides)
+    if gnn_weight_path is None:
+        gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pt"
+
+    if device == "cuda":
+        if not torch.cuda.is_available():
+            warnings.warn(
+                f"device was set to '{device}', but no available '{device}' device has been found, defaulting to 'cpu'.",
+                stacklevel=2,
+            )
+            device = "cpu"
+    elif device != "cpu":
+        raise ValueError(
+            f"device was set to '{device}', but only 'cuda' or 'cpu' are allowed."
+        )
+
+    model = GNN().to(device)
+    model = load_weights(model, gnn_weight_path, device)
+
+    data = get_hetero_data(peptide_df, allele_df, max_n_peptides)
     dataloader = DataLoader(data, batch_size=batch_size, shuffle=False)
 
     predictions, samples = [], []
     model.eval()
+
     with torch.no_grad():
-        for batch in tqdm(dataloader, desc="🤖 Running HLA typing prediction..."):
+        for batch in progress(dataloader, desc="🤖 Running HLA typing prediction..."):
             predictions.append(
-                np.reshape(model(batch).cpu().detach().numpy(), (len(batch.sample), -1))
+                np.reshape(
+                    model(batch.to(device)).cpu().detach().numpy(),
+                    (len(batch.sample), -1),
+                )
             )
             samples.append(batch.sample)
 
     probabilities_df = pd.concat(
         [
             pd.DataFrame(np.concatenate(samples), columns=["sample"]),
-            pd.DataFrame(np.concatenate(predictions), columns=selected_alleles),
+            pd.DataFrame(np.concatenate(predictions), columns=allele_df["allele"]),
         ],
         axis=1,
     ).melt(id_vars="sample", var_name="allele", value_name="probability")
@@ -128,138 +207,138 @@ def predict_model(
     )
 
     probabilities_df["locus"] = probabilities_df["allele"].str[4]
-    return probabilities_df
+    typing_df = get_typing(probabilities_df)
+    probabilities_df = probabilities_df[["sample", "locus", "allele", "probability"]]
+    return probabilities_df, typing_df
 
 
-def prepare_data(
-    use_gnn: bool = True, use_lookup: bool = True, gnn_weight_path=None
-) -> None:
-    """Prepare data and load model weights."""
-
-    if gnn_weight_path is None:
-        gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pt"
-
-    if use_gnn:
-        global model, mhc_features
-
-        # Check if weights file exists
-        if not gnn_weight_path.exists():
-            warnings.warn(
-                f"GNN weights file not found at {gnn_weight_path}. "
-                + "Falling back to lookup-only mode. To suppress this warning, use --no-gnn flag.",
-                stacklevel=2,
-            )
-
-        model = GNN()
-        model = load_weights(model, gnn_weight_path)
-        max_len_mhc = mhc_df["sequence"].str.split().str.len().max()
-        mhc_features = tokenize(mhc_df["sequence"].values, max_len_mhc)
-
-    if use_lookup:
-        global lookup_db
-        lookup_db = pd.read_csv(PACKAGE_ROOT / "data" / "lookup_db.csv")
-
-
-def predict(
+def predict_ensemble(
     peptide_df: pd.DataFrame,
-    selected_alleles: pd.Series,
-    use_gnn: bool = True,
-    use_lookup: bool = True,
+    allele_df: pd.DataFrame,
     batch_size: int = 1,
     max_n_peptides: int = 50_000,
-    gnn_weight_path=None,
+    gnn_weight_path: str | None = None,
+    device: str = "cpu",
+    progress: Callable[[T], TqdmType] = tqdm,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Predict binding probabilities and HLA typing for given peptides and alleles.
+    Predict HLA typing probabilities and HLA typing for given peptides and alleles using both, GNN and lookup.
 
     Args:
         peptide_df (pd.DataFrame): DataFrame containing peptide information.
-        selected_alleles (pd.Series): Series of selected alleles for prediction.
-        use_gnn (bool): Whether to use the GNN model for prediction. Defaults to True.
-        use_lookup (bool): Whether to use the lookup table for prediction. Defaults to True.
-        batch_size (int, optional): Batch size for GNN model prediction. Defaults to 1.
-        max_n_peptides (int, optional): Maximum number of peptides to process. Defaults to 50,000.
+        allele_df (pd.DataFrame): DataFrame with the columns ['allele', 'sequence'].
+            The sequences are being used as model input, only contained alleles are being predicted.
+        batch_size (int): Number of samples per batch for model inference. Defaults to 1.
+        max_n_peptides (int): Maximum number of peptides to process. Defaults to 50,000.
         gnn_weight_path (str or None, optional): Path to GNN model weights. Defaults loads from package
+        device (str): Can be used to run the prediction on GPU. If no cuda device can be found, will default to 'cpu' instead.
+            Allowed parameters: 'cuda', 'cpu'. Defaults to 'cpu'.
 
     Returns:
         tuple[pd.DataFrame, pd.DataFrame]:
             - pred_df: DataFrame with binding probabilities for each peptide and allele.
-            - typing: DataFrame with predicted HLA typing (top 2 alleles per locus).
+            - typing_df: DataFrame with predicted HLA typing (top 2 alleles per locus).
     """
-    if not use_gnn and not use_lookup:
-        raise ValueError("Must use GNN or lookup or both")
-
-    if gnn_weight_path is None:
-        gnn_weight_path = PACKAGE_ROOT / "weights" / "gnn_model_weights.pt"
-
-    # Load model and lookup
-    if (use_gnn and model is None) or (use_lookup and lookup_db is None):
-        prepare_data(use_gnn, use_lookup, gnn_weight_path)
 
     # Get predictions
-    probabilities = {}
+    pred_model_df, _ = predict_model(
+        peptide_df,
+        allele_df,
+        batch_size,
+        max_n_peptides,
+        gnn_weight_path,
+        device,
+        progress,
+    )
+    pred_lookup_df, _ = predict_lookup(peptide_df, allele_df)
 
-    if use_gnn:
-        probabilities["model"] = predict_model(
-            peptide_df, selected_alleles, batch_size, max_n_peptides
-        )
+    pred_df = pd.merge(
+        pred_model_df,
+        pred_lookup_df,
+        on=["sample", "allele", "locus"],
+        how="outer",
+        suffixes=["_gnn", "_lookup"],
+    ).fillna(0)
 
-    if use_lookup:
-        probabilities["lookup"] = predict_lookup(peptide_df, selected_alleles)
+    # Apply ensemble weighting
+    pred_df["probability"] = pred_df.apply(
+        lambda x: (
+            x["probability_gnn"] * (w := ENSEMBLE_GNN_WEIGHTS[x["locus"]])
+            + x["probability_lookup"] * (1 - w)
+        ),
+        axis=1,
+    )
 
-    if use_gnn and use_lookup:
-        pred_df = pd.merge(
-            probabilities["model"],
-            probabilities["lookup"],
-            on=["sample", "allele", "locus"],
-            how="outer",
-            suffixes=["_model", "_lookup"],
-        ).fillna(0)
-
-        # Apply ensemble weighting
-        pred_df["probability"] = pred_df.apply(
-            lambda x: (
-                x["probability_model"] * (w := ENSEMBLE_MODEL_WEIGHTS[x["locus"]])
-                + x["probability_lookup"] * (1 - w)
-            ),
-            axis=1,
-        )
-
-        pred_df = pred_df[
-            [
-                "sample",
-                "locus",
-                "allele",
-                "probability_model",
-                "probability_lookup",
-                "probability",
-            ]
+    pred_df = pred_df[
+        [
+            "sample",
+            "locus",
+            "allele",
+            "probability_gnn",
+            "probability_lookup",
+            "probability",
         ]
-    else:
-        pred_df = list(probabilities.values())[0]
-        pred_df = pred_df[["sample", "locus", "allele", "probability"]]
-
+    ]
     pred_df = pred_df.sort_values(["sample", "locus", "allele"])
 
-    # typing
-    typing_df = pred_df.loc[pred_df["probability"] > 0]
-    if len(typing_df) >= 3:
-        typing_df = (
-            typing_df.groupby(["sample", "locus"])
-            .apply(
-                lambda x: x.sort_values(by="probability")["allele"].iloc[-2:],
-                include_groups=False,
-            )
-            .reset_index()
+    typing_df = get_typing(pred_df)
+    return pred_df, typing_df
+
+
+def predict(
+    peptide_df: pd.DataFrame,
+    allele_df: pd.DataFrame,
+    prediction_model: str = "ensemble",
+    batch_size: int = 1,
+    max_n_peptides: int = 50_000,
+    gnn_weight_path: str | None = None,
+    device: str = "cpu",
+    progress: Callable[[T], TqdmType] = tqdm,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Predict HLA typing probabilities and HLA typing for given peptides and alleles.
+
+    Args:
+        peptide_df (pd.DataFrame): DataFrame containing peptide information.
+        allele_df (pd.DataFrame): DataFrame with the columns ['allele', 'sequence'].
+            The sequences are being used as model input, only contained alleles are being predicted.
+        prediction_model (str): Model
+        batch_size (int): Number of samples per batch for model inference. Defaults to 1.
+        max_n_peptides (int): Maximum number of peptides to process. Defaults to 50,000.
+        gnn_weight_path (str or None, optional): Path to GNN model weights. Defaults loads from package
+        device (str): Can be used to run the prediction on GPU. If no cuda device can be found, will default to 'cpu' instead.
+            Allowed parameters: 'cuda', 'cpu'. Defaults to 'cpu'.
+
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame]:
+            - pred_df: DataFrame with binding probabilities for each peptide and allele.
+            - typing_df: DataFrame with predicted HLA typing (top 2 alleles per locus).
+    """
+
+    if prediction_model == "ensemble":
+        pred_df, typing_df = predict_ensemble(
+            peptide_df,
+            allele_df,
+            batch_size,
+            max_n_peptides,
+            gnn_weight_path,
+            device,
+            progress,
+        )
+    elif prediction_model == "lookup":
+        pred_df, typing_df = predict_lookup(peptide_df, allele_df)
+    elif prediction_model == "gnn":
+        pred_df, typing_df = predict_model(
+            peptide_df,
+            allele_df,
+            batch_size,
+            max_n_peptides,
+            gnn_weight_path,
+            device,
+            progress,
         )
     else:
-        # Create empty typing DataFrame with correct columns
-        typing_df = pd.DataFrame(columns=["sample", "locus", "allele"])
-        warnings.warn(
-            f"Missing typing results, possibly due to insufficient input data. Use GNN or increase input size. ",
-            stacklevel=2,
+        raise ValueError(
+            "prediction_model must be either one of: Ensemble, Lookup or GNN."
         )
-
-    # filter out homozygous placeholder alleles
-    typing_df = typing_df.loc[~typing_df["allele"].str.contains("homozygous")]
     return pred_df, typing_df
