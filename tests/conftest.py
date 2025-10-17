@@ -25,7 +25,9 @@ def sample_peptides():
 @pytest.fixture
 def sample_alleles():
     """Sample HLA alleles for testing."""
-    return ["HLA-A*02:01", "HLA-B*07:02", "HLA-C*07:02"]
+    return pd.DataFrame({
+        "allele": ["HLA-A*02:01", "HLA-B*07:02", "HLA-C*07:02"]
+    })
 
 
 @pytest.fixture
@@ -40,7 +42,7 @@ def peptide_file(tmp_path, sample_peptides):
 def allele_file(tmp_path, sample_alleles):
     """Temporary allele file for CLI testing."""
     file_path = tmp_path / "test_alleles.csv"
-    pd.DataFrame(sample_alleles).to_csv(file_path, index=False, header=False)
+    sample_alleles.to_csv(file_path, index=False, header=False)
     return file_path
 
 
