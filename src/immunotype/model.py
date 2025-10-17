@@ -94,7 +94,8 @@ class SequenceEncoder(Module):
         self.bn = BatchNorm(embedding_dim, allow_single_element=True)
 
     def forward(self, x, src_mask):
-        x = self.encoder(x, src_key_padding_mask=src_mask)[:, 0, :]
+        x = self.encoder(x, src_key_padding_mask=src_mask)
+        x = torch.select(x, dim=1, index=0)
         x = F.leaky_relu(self.bn(x))
         return x
 

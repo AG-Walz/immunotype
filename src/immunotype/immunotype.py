@@ -1,10 +1,13 @@
 import warnings
 
+from tqdm import tqdm
+from typing import TypeVar, Callable
+from tqdm.std import tqdm as TqdmType
+
 import numpy as np
 import pandas as pd
 import torch
 from torch_geometric.loader import DataLoader
-from tqdm import tqdm
 from pathlib import Path
 
 from .constants import (
@@ -12,10 +15,12 @@ from .constants import (
     ENSEMBLE_GNN_WEIGHTS,
     LOOKUP_HOMOZYGOUS_THRESHOLDS,
     LOOKUP_DF,
-    PLACEHOLDERS
+    PLACEHOLDERS,
 )
 from .model import GNN
 from .utils import get_hetero_data, load_weights
+
+T = TypeVar("T")
 
 
 def get_typing(pred_df: pd.DataFrame) -> pd.DataFrame:
@@ -131,7 +136,8 @@ def predict_model(
     batch_size: int = 1,
     max_n_peptides: int = 50_000,
     gnn_weight_path: str | Path | None = None,
-    device: str = "cuda",
+    device: str = "cpu",
+    progress: Callable[[T], TqdmType] = tqdm,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Predict HLA typing probabilities and HLA typing for given peptides and alleles using a GNN.
@@ -175,8 +181,9 @@ def predict_model(
 
     predictions, samples = [], []
     model.eval()
+
     with torch.no_grad():
-        for batch in tqdm(dataloader, desc="🤖 Running HLA typing prediction..."):
+        for batch in progress(dataloader, desc="🤖 Running HLA typing prediction..."):
             predictions.append(
                 np.reshape(
                     model(batch.to(device)).cpu().detach().numpy(),
@@ -211,7 +218,8 @@ def predict_ensemble(
     batch_size: int = 1,
     max_n_peptides: int = 50_000,
     gnn_weight_path: str | None = None,
-    device: str = "cuda",
+    device: str = "cpu",
+    progress: Callable[[T], TqdmType] = tqdm,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Predict HLA typing probabilities and HLA typing for given peptides and alleles using both, GNN and lookup.
@@ -224,7 +232,7 @@ def predict_ensemble(
         max_n_peptides (int): Maximum number of peptides to process. Defaults to 50,000.
         gnn_weight_path (str or None, optional): Path to GNN model weights. Defaults loads from package
         device (str): Can be used to run the prediction on GPU. If no cuda device can be found, will default to 'cpu' instead.
-            Allowed parameters: 'cuda', 'cpu'. Defaults to 'cuda'.
+            Allowed parameters: 'cuda', 'cpu'. Defaults to 'cpu'.
 
     Returns:
         tuple[pd.DataFrame, pd.DataFrame]:
@@ -234,7 +242,13 @@ def predict_ensemble(
 
     # Get predictions
     pred_model_df, _ = predict_model(
-        peptide_df, allele_df, batch_size, max_n_peptides, gnn_weight_path, device
+        peptide_df,
+        allele_df,
+        batch_size,
+        max_n_peptides,
+        gnn_weight_path,
+        device,
+        progress,
     )
     pred_lookup_df, _ = predict_lookup(peptide_df, allele_df)
 
@@ -278,7 +292,8 @@ def predict(
     batch_size: int = 1,
     max_n_peptides: int = 50_000,
     gnn_weight_path: str | None = None,
-    device: str = "cuda",
+    device: str = "cpu",
+    progress: Callable[[T], TqdmType] = tqdm,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Predict HLA typing probabilities and HLA typing for given peptides and alleles.
@@ -292,7 +307,7 @@ def predict(
         max_n_peptides (int): Maximum number of peptides to process. Defaults to 50,000.
         gnn_weight_path (str or None, optional): Path to GNN model weights. Defaults loads from package
         device (str): Can be used to run the prediction on GPU. If no cuda device can be found, will default to 'cpu' instead.
-            Allowed parameters: 'cuda', 'cpu'. Defaults to 'cuda'.
+            Allowed parameters: 'cuda', 'cpu'. Defaults to 'cpu'.
 
     Returns:
         tuple[pd.DataFrame, pd.DataFrame]:
@@ -302,13 +317,25 @@ def predict(
 
     if prediction_model == "ensemble":
         pred_df, typing_df = predict_ensemble(
-            peptide_df, allele_df, batch_size, max_n_peptides, gnn_weight_path, device
+            peptide_df,
+            allele_df,
+            batch_size,
+            max_n_peptides,
+            gnn_weight_path,
+            device,
+            progress,
         )
     elif prediction_model == "lookup":
         pred_df, typing_df = predict_lookup(peptide_df, allele_df)
     elif prediction_model == "gnn":
         pred_df, typing_df = predict_model(
-            peptide_df, allele_df, batch_size, max_n_peptides, gnn_weight_path, device
+            peptide_df,
+            allele_df,
+            batch_size,
+            max_n_peptides,
+            gnn_weight_path,
+            device,
+            progress,
         )
     else:
         raise ValueError(

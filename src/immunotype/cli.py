@@ -121,7 +121,12 @@ def main(
 
     # Make predictions
     with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
+        warnings.filterwarnings(
+            "ignore",
+            message="The PyTorch API of nested tensors is in prototype stage and will change in the near future. "
+            + "We recommend specifying layout=torch.jagged when constructing a nested tensor, "
+            + "as this layout receives active development, has better operator coverage, and works with torch.compile.",
+        )
         pred_df, typing_df = predict(
             peptide_df=peptide_df,
             allele_df=allele_df,

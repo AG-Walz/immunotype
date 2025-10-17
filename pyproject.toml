@@ -35,7 +35,7 @@ dependencies = [
     "torch-geometric>=2.3.0",
     "tqdm>=4.64.0",
     "rich-click>=1.6.0",
-    "pandera >= 0.26.0 "
+    "pandera>=0.26.0 "
 ]
 
 [project.optional-dependencies]

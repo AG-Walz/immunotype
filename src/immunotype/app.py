@@ -9,6 +9,9 @@ Usage:
     python app.py  # Launch directly
 """
 
+import warnings
+import html
+
 from pathlib import Path
 
 import gradio as gr
@@ -32,15 +35,28 @@ def submit(peptides: str, alleles: str, max_n_peptides: int, prediction_model: s
     """Executes the script by pressing the submit button."""
     global typing_df, probability_df
 
-    peptide_df = parse_peptide_input(peptides)
-    allele_df = parse_allele_input(alleles)
+    try:
+        peptide_df = parse_peptide_input(peptides)
+        allele_df = parse_allele_input(alleles)
 
-    probability_df, typing_df = predict(
-        peptide_df,
-        allele_df,
-        prediction_model=prediction_model.lower(),
-        max_n_peptides=max_n_peptides,
-    )
+        with warnings.catch_warnings(record=True) as w:
+            warnings.filterwarnings(
+                "ignore",
+                message="The PyTorch API of nested tensors is in prototype stage and will change in the near future. "
+                + "We recommend specifying layout=torch.jagged when constructing a nested tensor, "
+                + "as this layout receives active development, has better operator coverage, and works with torch.compile.",
+            )
+            probability_df, typing_df = predict(
+                peptide_df,
+                allele_df,
+                prediction_model=prediction_model.lower(),
+                max_n_peptides=max_n_peptides,
+                progress=gr.Progress().tqdm,
+            )
+            for warning in w:
+                gr.Warning(html.escape(str(warning.message)), duration=None)
+    except Exception as e:
+        raise gr.Error(html.escape(str(e)), duration=None)
 
     typing_path = "typing.tsv"
     typing_df.to_csv(typing_path, index=False, sep="\t")
