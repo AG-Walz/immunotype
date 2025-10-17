@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import rich_click as click
 
-from .constants import __authors__,ASCII_BANNER, PREDICTION_MODELS
+from .constants import __authors__, ASCII_BANNER, PREDICTION_MODELS
 from .immunotype import predict
 from .utils import parse_peptide_input, parse_allele_input
 
@@ -76,7 +76,9 @@ def show_banner():
 @click.option(
     "--prediction_model",
     default="ensemble",
-    type=click.Choice([model.lower() for model in PREDICTION_MODELS], case_sensitive=True),
+    type=click.Choice(
+        [model.lower() for model in PREDICTION_MODELS], case_sensitive=True
+    ),
     help="Disable the pre-trained GNN model.",
     show_default=True,
 )
@@ -145,9 +147,9 @@ def main(
 
     # Display results
     click.secho("\n🎯 Predicted HLA typing", fg="green")
-    for s, group in typing_df.groupby("sample"):
-        alleles = ", ".join(sorted(group["allele"].values))
-        click.secho(f"   Sample {s}: {alleles}", fg="cyan")
+    for _, (s, typing) in typing_df.iterrows():
+        typing_print = ", ".join(typing.split(";"))
+        click.secho(f"   Sample {s}: {typing_print}", fg="cyan")
 
 
 if __name__ == "__main__":
