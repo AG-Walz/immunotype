@@ -31,7 +31,13 @@ typing_df = None
 probability_df = None
 
 
-def submit(peptides: str, alleles: str, max_n_peptides: int, prediction_model: str):
+def submit(
+    peptides: str,
+    alleles: str,
+    max_n_peptides: int,
+    prediction_model: str,
+    use_gpu: bool,
+):
     """Executes the script by pressing the submit button."""
     global typing_df, probability_df
 
@@ -51,6 +57,7 @@ def submit(peptides: str, alleles: str, max_n_peptides: int, prediction_model: s
                 allele_df,
                 prediction_model=prediction_model.lower(),
                 max_n_peptides=max_n_peptides,
+                device="cuda" if use_gpu else "cpu",
                 progress=gr.Progress().tqdm,
             )
             for warning in w:
@@ -132,7 +139,7 @@ def create_interface():
                         peptide_input = gr.Textbox(
                             label="Peptides input",
                             info="Peptides need to be separated by newlines (example).",
-                            lines=20,
+                            lines=26,
                             value=example_peptides,
                         )
                         peptide_file_input = gr.File(label="Peptides input", height=140)
@@ -169,6 +176,9 @@ def create_interface():
                             + "Note that all peptides are predicted and allele probabilities averaged, "
                             + "if the number of peptides is larger than the batch size",
                         )
+                        use_gpu = gr.Checkbox(
+                            label="Use GPU", info="Predict on GPU instead of CPU."
+                        )
 
                     submit_button = gr.Button("Submit", variant="primary")
 
@@ -199,13 +209,14 @@ def create_interface():
                             label="Download CSV", visible=False
                         )
 
-            submit_button.click(
+            _ = submit_button.click(
                 submit,
                 inputs=[
                     peptide_input,
                     allele_input,
                     n_peptides_slider,
                     model_toggle,
+                    use_gpu,
                 ],
                 outputs=[
                     typing,

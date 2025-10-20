@@ -2,7 +2,6 @@ import sys
 import warnings
 from pathlib import Path
 
-import pandas as pd
 import rich_click as click
 
 from .constants import __authors__, ASCII_BANNER, PREDICTION_MODELS
@@ -79,7 +78,13 @@ def show_banner():
     type=click.Choice(
         [model.lower() for model in PREDICTION_MODELS], case_sensitive=True
     ),
-    help="Disable the pre-trained GNN model.",
+    help="Select which model to use.",
+    show_default=True,
+)
+@click.option(
+    "--use_gpu",
+    is_flag=True,
+    help="Run prediction on GPU instead of CPU.",
     show_default=True,
 )
 @click.version_option(version=__version__, prog_name="immunotype")
@@ -90,6 +95,7 @@ def main(
     prob_output: Path,
     max_n_peptides: int,
     prediction_model: str,
+    use_gpu: bool,
 ):
     """
     Predict HLA typing from peptide sequences using immunotype.
@@ -132,6 +138,7 @@ def main(
             allele_df=allele_df,
             prediction_model=prediction_model,
             max_n_peptides=max_n_peptides,
+            device="cuda" if use_gpu else "cpu",
         )
 
         # Show any warnings

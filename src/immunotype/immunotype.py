@@ -164,7 +164,7 @@ def predict_model(
     if device == "cuda":
         if not torch.cuda.is_available():
             warnings.warn(
-                f"device was set to '{device}', but no available '{device}' device has been found, defaulting to 'cpu'.",
+                f"Device was set to '{device}', but no available '{device}' device has been found, defaulting to 'cpu'.",
                 stacklevel=2,
             )
             device = "cpu"
