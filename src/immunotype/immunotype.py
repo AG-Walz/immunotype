@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .constants import (
     PACKAGE_ROOT,
+    MHC_SEQUENCE_DF,
     ENSEMBLE_GNN_WEIGHTS,
     LOOKUP_HOMOZYGOUS_THRESHOLDS,
     LOOKUP_DF,
@@ -73,6 +74,7 @@ def predict_lookup(
     lookup_score_df = pd.merge(
         LOOKUP_DF.loc[LOOKUP_DF["allele"].isin(allele_df["allele"])],
         peptide_df,
+        on="peptide",
         how="inner",
     )
     index = pd.MultiIndex.from_tuples(
@@ -176,6 +178,11 @@ def predict_model(
     model = GNN().to(device)
     model = load_weights(model, gnn_weight_path, device)
 
+    peptide_df["sequence"] = [
+        "[CLS] " + " ".join(list(peptide)) + " [SEP]"
+        for peptide in peptide_df["peptide"].values
+    ]
+    allele_df = pd.merge(allele_df, MHC_SEQUENCE_DF, on="allele", how="left")
     data = get_hetero_data(peptide_df, allele_df, max_n_peptides)
     dataloader = DataLoader(data, batch_size=batch_size, shuffle=False)
 

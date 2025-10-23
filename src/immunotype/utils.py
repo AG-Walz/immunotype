@@ -37,7 +37,6 @@ class AlleleInputSchema(pa.DataFrameModel):
     """Validation schema for allele input."""
 
     allele: Series[str] = pa.Field(nullable=False)
-    sequence: Series[str] = pa.Field(nullable=False)
 
     class Config:
         coerce = True
@@ -64,10 +63,6 @@ def parse_peptide_input(data: str | pd.DataFrame) -> pd.DataFrame:
                 "Input must have either one column (peptide) or two columns (sample, peptide)."
             )
     df = PeptideInputSchema.validate(df)
-    df["sequence"] = [
-        "[CLS] " + " ".join(list(peptide)) + " [SEP]"
-        for peptide in df["peptide"].values
-    ]
     return df
 
 
@@ -84,7 +79,6 @@ def parse_allele_input(data: str | pd.DataFrame) -> pd.DataFrame:
             df = df[["allele"]]
         else:
             raise ValueError("Input must have one column (allele).")
-    df = pd.merge(df, MHC_SEQUENCE_DF, on="allele", how="left")
     df = AlleleInputSchema.validate(df)
     return df
 
@@ -137,7 +131,7 @@ def get_hetero_data(
     )
 
     data = []
-    for sample, idx in peptide_df.groupby("sample").groups.items():
+    for sample, idx in peptide_df.reset_index().groupby("sample").groups.items():
         for i in range(0, len(idx), max_n_peptides):
             entry = HeteroData()
             entry["peptide"].x = torch.tensor(

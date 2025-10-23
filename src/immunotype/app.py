@@ -35,6 +35,7 @@ def submit(
     peptides: str,
     alleles: str,
     max_n_peptides: int,
+    batch_size: int,
     prediction_model: str,
     use_gpu: bool,
 ):
@@ -57,6 +58,7 @@ def submit(
                 allele_df,
                 prediction_model=prediction_model.lower(),
                 max_n_peptides=max_n_peptides,
+                batch_size=batch_size,
                 device="cuda" if use_gpu else "cpu",
                 progress=gr.Progress().tqdm,
             )
@@ -165,20 +167,31 @@ def create_interface():
                                 label="HLA allele input", height=140
                             )
                             _ = gr.ClearButton([allele_input, allele_file_input])
-                        n_peptides_slider = gr.Slider(
-                            1_000,
-                            100_000,
-                            value=50_000,
-                            step=1_000,
-                            interactive=True,
-                            label="Maximum number of peptides",
-                            info="Controls the maximum number of peptides per prediction run. "
-                            + "Note that all peptides are predicted and allele probabilities averaged, "
-                            + "if the number of peptides is larger than the batch size",
-                        )
-                        use_gpu = gr.Checkbox(
-                            label="Use GPU", info="Predict on GPU instead of CPU."
-                        )
+                        with gr.Group():
+                            n_peptides_slider = gr.Slider(
+                                1_000,
+                                100_000,
+                                value=50_000,
+                                step=1_000,
+                                interactive=True,
+                                label="Maximum number of peptides",
+                                info="Controls the maximum number of peptides per prediction run. "
+                                + "Note that all peptides are predicted and allele probabilities averaged, "
+                                + "if the number of peptides is larger than the batch size",
+                            )
+                            batch_size_slider = gr.Slider(
+                                1,
+                                100,
+                                value=1,
+                                step=1,
+                                interactive=True,
+                                label="Batch size",
+                                info="Controls how many samples should be predicted simultaneously. "
+                                + "Affects only Ensemble and GNN prediction from the model selection.",
+                            )
+                            use_gpu = gr.Checkbox(
+                                label="Use GPU", info="Predict on GPU instead of CPU."
+                            )
 
                     submit_button = gr.Button("Submit", variant="primary")
 
@@ -215,6 +228,7 @@ def create_interface():
                     peptide_input,
                     allele_input,
                     n_peptides_slider,
+                    batch_size_slider,
                     model_toggle,
                     use_gpu,
                 ],

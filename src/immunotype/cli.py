@@ -73,6 +73,13 @@ def show_banner():
     show_default=True,
 )
 @click.option(
+    "--batch_size",
+    default=1,
+    type=int,
+    help="How many samples should be predicted simultaneously.",
+    show_default=True,
+)
+@click.option(
     "--prediction_model",
     default="ensemble",
     type=click.Choice(
@@ -94,6 +101,7 @@ def main(
     typing_output: Path,
     prob_output: Path,
     max_n_peptides: int,
+    batch_size: int,
     prediction_model: str,
     use_gpu: bool,
 ):
@@ -138,6 +146,7 @@ def main(
             allele_df=allele_df,
             prediction_model=prediction_model,
             max_n_peptides=max_n_peptides,
+            batch_size=batch_size,
             device="cuda" if use_gpu else "cpu",
         )
 
