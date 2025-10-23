@@ -63,3 +63,28 @@ MHC_SEQUENCE_DF = pd.read_csv(PACKAGE_ROOT / "data" / "mhc_sequences.csv")
 LOOKUP_DF = pd.read_csv(PACKAGE_ROOT / "data" / "lookup_db.csv")
 
 PREDICTION_MODELS = ["Ensemble", "GNN", "Lookup"]
+
+APP_HELP_SECTION = """
+## 📚 Tutorial and Resources
+
+### Usage
+1. **Peptides input**: Enter peptide sequences separated by newlines, or upload a file
+2. **Select typing method**: Choose between automatic typing or input known HLA alleles
+4. **Submit**: Click submit to run the prediction
+5. **View results**: See predicted typing and download detailed probabilities
+
+### Input Formats
+#### Peptides
+- **One sample**: One peptide sequence per line (e.g., `ALDGRETD`)
+- **Multiple samples**: Header with sample & peptide, then sample id and peptide sequence
+- **HLA alleles**: One allele per line (e.g., HLA-A*24-27)
+- **Files**: TSV/CSV files with peptide sequences in the first column
+
+### Output
+- **Typing**: Predicted HLA alleles for your sample
+- **Probabilities**: Detailed probability scores for all tested alleles
+- **CSV Download**: Full results table for further analysis
+
+### Citation
+If you use immunotype in your research, please cite TODO.
+"""

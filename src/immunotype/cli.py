@@ -41,7 +41,7 @@ def show_banner():
     "This tool uses graph neural networks and lookup tables to predict HLA allele typing "
     "from immunopeptidomics data. Provide a peptide input file and optionally customize "
     "the HLA alleles to consider.",
-    epilog="For more information, visit: https://github.com/immunotype/immunotype",
+    epilog="For more information, visit: https://github.com/AG-Walz/immunotype",
 )
 @click.argument(
     "peptide_input",

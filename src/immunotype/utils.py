@@ -52,12 +52,21 @@ def parse_peptide_input(data: str | pd.DataFrame) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         df = data
     else:
-        df = pd.read_csv(StringIO(data), sep=r"[,\t; ]+", engine="python")
+        df = pd.read_csv(
+            StringIO(data),
+            sep=r"[,\t; ]+",
+            engine="python",
+            header=None,
+        )
         if df.shape[1] == 1:
             df.columns = ["peptide"]
             df["sample"] = "sample_0"  # add placeholder sample
-        elif {"sample", "peptide"}.issubset(df.columns):
-            df = df
+        elif (
+            "sample" in df.iloc[0].values
+        ):  # if the first row contains 'sample' we assume they are column names
+            df = pd.DataFrame(df.iloc[1:].values, columns=df.iloc[0].values)
+        elif df.shape[1] == 2:  # sample has to be first
+            df.columns = ["sample", "peptide"]
         else:
             raise ValueError(
                 "Input must have either one column (peptide) or two columns (sample, peptide)."
@@ -72,11 +81,12 @@ def parse_allele_input(data: str | pd.DataFrame) -> pd.DataFrame:
         df = data
 
     else:
-        df = pd.read_csv(StringIO(data), sep=r"[,\t; ]+", engine="python")
+        df = pd.read_csv(StringIO(data), sep=r"[,\t; ]+", engine="python", header=None)
         if df.shape[1] == 1:
-            df.columns = ["allele"]
-        elif {"allele"}.issubset(df.columns):
-            df = df[["allele"]]
+            if df.iloc[0, 0] == "allele":
+                df = pd.DataFrame(df.iloc[1:].values, columns=["allele"])
+            else:
+                df.columns = ["allele"]
         else:
             raise ValueError("Input must have one column (allele).")
     df = AlleleInputSchema.validate(df)

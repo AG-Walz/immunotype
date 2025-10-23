@@ -61,7 +61,7 @@ pip install immunotype[all]
 │    --help                                     Show this message and exit.                                                                                               │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
- For more information, visit: https://github.com/immunotype/immunotype
+ For more information, visit: https://github.com/AG-Walz/immunotype
  ```
 
 ```bash

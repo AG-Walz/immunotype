@@ -19,7 +19,7 @@ import pandas as pd
 
 from immunotype.utils import parse_peptide_input, parse_allele_input
 from immunotype.immunotype import predict
-from immunotype.constants import PREDICTION_MODELS
+from immunotype.constants import PREDICTION_MODELS, APP_HELP_SECTION
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
@@ -167,31 +167,30 @@ def create_interface():
                                 label="HLA allele input", height=140
                             )
                             _ = gr.ClearButton([allele_input, allele_file_input])
-                        with gr.Group():
-                            n_peptides_slider = gr.Slider(
-                                1_000,
-                                100_000,
-                                value=50_000,
-                                step=1_000,
-                                interactive=True,
-                                label="Maximum number of peptides",
-                                info="Controls the maximum number of peptides per prediction run. "
-                                + "Note that all peptides are predicted and allele probabilities averaged, "
-                                + "if the number of peptides is larger than the batch size",
-                            )
-                            batch_size_slider = gr.Slider(
-                                1,
-                                100,
-                                value=1,
-                                step=1,
-                                interactive=True,
-                                label="Batch size",
-                                info="Controls how many samples should be predicted simultaneously. "
-                                + "Affects only Ensemble and GNN prediction from the model selection.",
-                            )
-                            use_gpu = gr.Checkbox(
-                                label="Use GPU", info="Predict on GPU instead of CPU."
-                            )
+                        n_peptides_slider = gr.Slider(
+                            1_000,
+                            100_000,
+                            value=50_000,
+                            step=1_000,
+                            interactive=True,
+                            label="Maximum number of peptides",
+                            info="Controls the maximum number of peptides per prediction run. "
+                            + "Note that all peptides are predicted and allele probabilities averaged, "
+                            + "if the number of peptides in a sample is larger than the number set here.",
+                        )
+                        batch_size_slider = gr.Slider(
+                            1,
+                            100,
+                            value=1,
+                            step=1,
+                            interactive=True,
+                            label="Batch size",
+                            info="Controls how many samples should be predicted simultaneously. "
+                            + "Affects only Ensemble and GNN prediction from the model selection.",
+                        )
+                        use_gpu = gr.Checkbox(
+                            label="Use GPU", info="Predict on GPU instead of CPU."
+                        )
 
                     submit_button = gr.Button("Submit", variant="primary")
 
@@ -249,28 +248,7 @@ def create_interface():
                 sort_table, inputs=col_selector, outputs=typing_probabilities
             )
         with gr.Tab("Help"):
-            gr.Markdown("""
-            ## 📚 Tutorial and Resources
-
-            ### Usage
-            1. **Input peptides**: Enter peptide sequences separated by newlines, or upload a file
-            2. **Select typing method**: Choose between automatic typing or input known HLA alleles
-            4. **Submit**: Click submit to run the prediction
-            5. **View results**: See predicted typing and download detailed probabilities
-
-            ### Input Formats
-            - **Peptides**: One peptide sequence per line (e.g., `ALDGRETD`)
-            - **HLA alleles**: One allele per line (e.g., HLA-A*24-27)
-            - **Files**: TSV/CSV files with peptide sequences in the first column
-
-            ### Output
-            - **Typing**: Predicted HLA alleles for your sample
-            - **Probabilities**: Detailed probability scores for all tested alleles
-            - **CSV Download**: Full results table for further analysis
-
-            ### Citation
-            If you use immunotype in your research, please cite TODO.
-            """)
+            gr.Markdown(APP_HELP_SECTION)
 
     return app
 
