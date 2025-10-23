@@ -178,12 +178,13 @@ def predict_model(
     model = GNN().to(device)
     model = load_weights(model, gnn_weight_path, device)
 
-    peptide_df["sequence"] = [
+    peptide_input_df = peptide_df.copy()
+    peptide_input_df["sequence"] = [
         "[CLS] " + " ".join(list(peptide)) + " [SEP]"
-        for peptide in peptide_df["peptide"].values
+        for peptide in peptide_input_df["peptide"].values
     ]
     allele_df = pd.merge(allele_df, MHC_SEQUENCE_DF, on="allele", how="left")
-    data = get_hetero_data(peptide_df, allele_df, max_n_peptides)
+    data = get_hetero_data(peptide_input_df, allele_df, max_n_peptides)
     dataloader = DataLoader(data, batch_size=batch_size, shuffle=False)
 
     predictions, samples = [], []
