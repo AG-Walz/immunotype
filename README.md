@@ -48,18 +48,18 @@ pip install immunotype[all]
  Predict HLA typing from immunopeptide sequences.
  This tool uses graph neural networks and lookup tables to predict HLA allele typing from immunopeptidomics data. Provide a peptide input file and optionally customize the HLA alleles to consider.
 
-╭─ Options ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ *  PEPTIDE_INPUT       PATH                   TSV input file. Either a single column of peptides or two columns with sample IDs and peptides. [required]                                                                      │
-│ *  TYPING_OUTPUT       PATH                   Path to save the typing output. [required]                                                                                                                                      │
-│    --prob_output       PATH                   Save detailed HLA probabilities to specified TSV file.                                                                                                                          │
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  PEPTIDE_INPUT       PATH                   TSV input file. Either a single column of peptides or two columns with sample IDs and peptides. [required]                │
+│ *  TYPING_OUTPUT       PATH                   Path to save the typing output. [required]                                                                                │
+│    --prob_output       PATH                   Save detailed HLA probabilities to specified TSV file.                                                                    │
 │    --hla-input         PATH                   Path to the HLA input file containing alleles to consider. [default: <immunotype-package-path>/data/selected_alleles.csv] │
-│    --max-n-peptides    INTEGER                Maximum number of peptides to predict at once. [default: 50000]                                                                                                                 │
-│    --batch_size        INTEGER                How many samples should be predicted simultaneously. [default: 1]                                                                                                               │
-│    --prediction_model  [ensemble|gnn|lookup]  Select which model to use. [default: ensemble]                                                                                                                                  │
-│    --use_gpu                                  Run prediction on GPU instead of CPU.                                                                                                                                           │
-│    --version                                  Show the version and exit.                                                                                                                                                      │
-│    --help                                     Show this message and exit.                                                                                                                                                     │
-╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+│    --max-n-peptides    INTEGER                Maximum number of peptides to predict at once. [default: 50000]                                                           │
+│    --batch_size        INTEGER                How many samples should be predicted simultaneously. [default: 1]                                                         │
+│    --prediction_model  [ensemble|gnn|lookup]  Select which model to use. [default: ensemble]                                                                            │
+│    --use_gpu                                  Run prediction on GPU instead of CPU.                                                                                     │
+│    --version                                  Show the version and exit.                                                                                                │
+│    --help                                     Show this message and exit.                                                                                               │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 
  For more information, visit: https://github.com/immunotype/immunotype
  ```
