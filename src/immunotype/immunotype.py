@@ -38,7 +38,9 @@ def get_typing(pred_df: pd.DataFrame) -> pd.DataFrame:
     typing_df = (
         typing_df.groupby(["sample", "locus"])
         .apply(
-            lambda x: x.sort_values(by="probability")["allele"].iloc[-2:],
+            lambda x: x.sort_values(by="probability")["allele"].iloc[-2:]
+            if len(x) >= 2
+            else x,
             include_groups=False,
         )
         .reset_index()
