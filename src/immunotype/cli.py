@@ -4,9 +4,9 @@ from pathlib import Path
 
 import rich_click as click
 
-from .constants import __authors__, ASCII_BANNER, PREDICTION_MODELS
+from .constants import ASCII_BANNER, PREDICTION_MODELS, __authors__
 from .immunotype import predict
-from .utils import parse_peptide_input, parse_allele_input
+from .utils import parse_allele_input, parse_peptide_input
 
 # Import version from package
 try:
@@ -66,7 +66,7 @@ def show_banner():
     show_default=True,
 )
 @click.option(
-    "--max-n-peptides",
+    "--max_n_peptides",
     default=50_000,
     type=int,
     help="Maximum number of peptides to predict at once.",

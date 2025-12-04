@@ -2,20 +2,17 @@ import math
 
 import torch
 import torch.nn.functional as F
-from torch.nn import Embedding
-from torch.nn import LayerNorm
-from torch.nn import Linear
-from torch.nn import Module
-from torch.nn import ModuleDict
-from torch.nn import ModuleList
-from torch.nn import Parameter
-from torch.nn import TransformerEncoder
-from torch.nn import TransformerEncoderLayer
-
-from torch_geometric.nn import BatchNorm
-from torch_geometric.nn import HeteroConv
-from torch_geometric.nn import TransformerConv
-from torch_geometric.utils import softmax
+from torch.nn import (
+    Embedding,
+    LayerNorm,
+    Linear,
+    Module,
+    ModuleDict,
+    ModuleList,
+    TransformerEncoder,
+    TransformerEncoderLayer,
+)
+from torch_geometric.nn import BatchNorm, HeteroConv, TransformerConv
 
 
 class PositionalEncoding(Module):
@@ -35,44 +32,6 @@ class PositionalEncoding(Module):
     def forward(self, x):
         x = x + self.pe[:, : x.size(1), :]
         return x
-
-
-class GumbelTransformerConv(TransformerConv):
-    def __init__(self, in_channels, out_channels, heads, **kwargs):
-        super().__init__(in_channels, out_channels, heads=heads, **kwargs)
-        self.tau = Parameter(torch.rand(1, 1))
-        self.gumbel_alpha = 1.0
-
-    def message(self, query_i, key_j, value_j, edge_attr, index, ptr, size_i):
-        if self.lin_edge is not None:
-            assert edge_attr is not None
-            edge_attr = self.lin_edge(edge_attr).view(-1, self.heads, self.out_channels)
-            key_j = key_j + edge_attr
-
-        alpha = (query_i * key_j).sum(dim=-1) / math.sqrt(self.out_channels)
-
-        if self.training:
-            # add temperature and gumbel randomness
-            gumbels = (
-                -torch.empty_like(alpha, memory_format=torch.legacy_contiguous_format)
-                .exponential_()
-                .log()
-            )
-            alpha = (alpha + gumbels * self.gumbel_alpha) / self.tau
-        else:
-            alpha = alpha / self.tau
-
-        alpha = softmax(alpha, index, ptr, size_i)
-
-        self._alpha = alpha
-        alpha = F.dropout(alpha, p=self.dropout, training=self.training)
-
-        out = value_j
-        if edge_attr is not None:
-            out = out + edge_attr
-
-        out = out * alpha.view(-1, self.heads, 1)
-        return out
 
 
 class SequenceEncoder(Module):
@@ -172,13 +131,13 @@ class GNN(Module):
             [
                 HeteroConv(
                     {
-                        ("peptide", "determines", "mhc"): GumbelTransformerConv(
+                        ("peptide", "determines", "mhc"): TransformerConv(
                             (dim, dim * 2),
                             dim_out_conv,
                             heads=n_heads_conv,
                             dropout=dropout,
                         ),
-                        ("mhc", "influences", "mhc"): GumbelTransformerConv(
+                        ("mhc", "influences", "mhc"): TransformerConv(
                             dim * 2, dim_out_conv, heads=n_heads_conv, dropout=dropout
                         ),
                         ("peptide", "influences", "peptide"): TransformerConv(
