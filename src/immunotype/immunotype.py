@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .constants import (
     PACKAGE_ROOT,
+    MHC_SEQUENCE_DF,
     ENSEMBLE_GNN_WEIGHTS,
     LOOKUP_HOMOZYGOUS_THRESHOLDS,
     LOOKUP_DF,
@@ -37,7 +38,9 @@ def get_typing(pred_df: pd.DataFrame) -> pd.DataFrame:
     typing_df = (
         typing_df.groupby(["sample", "locus"])
         .apply(
-            lambda x: x.sort_values(by="probability")["allele"].iloc[-2:],
+            lambda x: x.sort_values(by="probability")["allele"].iloc[-2:]
+            if len(x) >= 2
+            else x,
             include_groups=False,
         )
         .reset_index()
@@ -73,6 +76,7 @@ def predict_lookup(
     lookup_score_df = pd.merge(
         LOOKUP_DF.loc[LOOKUP_DF["allele"].isin(allele_df["allele"])],
         peptide_df,
+        on="peptide",
         how="inner",
     )
     index = pd.MultiIndex.from_tuples(
@@ -164,7 +168,7 @@ def predict_model(
     if device == "cuda":
         if not torch.cuda.is_available():
             warnings.warn(
-                f"device was set to '{device}', but no available '{device}' device has been found, defaulting to 'cpu'.",
+                f"Device was set to '{device}', but no available '{device}' device has been found, defaulting to 'cpu'.",
                 stacklevel=2,
             )
             device = "cpu"
@@ -176,7 +180,13 @@ def predict_model(
     model = GNN().to(device)
     model = load_weights(model, gnn_weight_path, device)
 
-    data = get_hetero_data(peptide_df, allele_df, max_n_peptides)
+    peptide_input_df = peptide_df.copy()
+    peptide_input_df["sequence"] = [
+        "[CLS] " + " ".join(list(peptide)) + " [SEP]"
+        for peptide in peptide_input_df["peptide"].values
+    ]
+    allele_df = pd.merge(allele_df, MHC_SEQUENCE_DF, on="allele", how="left")
+    data = get_hetero_data(peptide_input_df, allele_df, max_n_peptides)
     dataloader = DataLoader(data, batch_size=batch_size, shuffle=False)
 
     predictions, samples = [], []

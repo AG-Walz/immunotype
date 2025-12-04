@@ -42,14 +42,37 @@ pip install immunotype[all]
 ### Command Line Interface
 
 ```bash
+
+ Usage: immunotype [OPTIONS] PEPTIDE_INPUT TYPING_OUTPUT
+
+ Predict HLA typing from immunopeptide sequences.
+ This tool uses graph neural networks and lookup tables to predict HLA allele typing from immunopeptidomics data. Provide a peptide input file and optionally customize the HLA alleles to consider.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ *  PEPTIDE_INPUT       PATH                   TSV input file. Either a single column of peptides or two columns with sample IDs and peptides. [required]                │
+│ *  TYPING_OUTPUT       PATH                   Path to save the typing output. [required]                                                                                │
+│    --prob_output       PATH                   Save detailed HLA probabilities to specified TSV file.                                                                    │
+│    --hla-input         PATH                   Path to the HLA input file containing alleles to consider. [default: <immunotype-package-path>/data/selected_alleles.csv] │
+│    --max-n-peptides    INTEGER                Maximum number of peptides to predict at once. [default: 50000]                                                           │
+│    --batch_size        INTEGER                How many samples should be predicted simultaneously. [default: 1]                                                         │
+│    --prediction_model  [ensemble|gnn|lookup]  Select which model to use. [default: ensemble]                                                                            │
+│    --use_gpu                                  Run prediction on GPU instead of CPU.                                                                                     │
+│    --version                                  Show the version and exit.                                                                                                │
+│    --help                                     Show this message and exit.                                                                                               │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+ For more information, visit: https://github.com/AG-Walz/immunotype
+ ```
+
+```bash
 # Basic prediction
-immunotype peptides.tsv output.tsv
+immunotype src/examples/single_sample_input.tsv test_single_sample_typing.tsv
 
 # With probability details
-immunotype peptides.tsv output.tsv --out_probs probabilities.tsv
+immunotype src/examples/single_sample_input.tsv test_single_sample_typing.tsv --out_probs test_single_sample_probabilities.tsv
 
 # Custom settings
-immunotype peptides.tsv output.tsv --batch-size 5000 --no-gnn
+immunotype src/examples/single_sample_input.tsv test_single_sample_typing.tsv --batch-size 100 --prediction_model gnn
 
 # Explore all CLI options
 immunotype --help
@@ -62,7 +85,7 @@ immunotype --help
 pip install immunotype[app]
 
 # Run the Gradio app
-python app.py
+immunotype-app
 ```
 
 ### Python API
@@ -77,12 +100,14 @@ peptides = pd.DataFrame({
     'sample': ['sample1', 'sample1']
 })
 
-alleles = ['HLA-A*02:01', 'HLA-B*07:02', 'HLA-C*07:02']
+alleles = pd.DataFrame({
+    'allele': ['HLA-A*02:01', 'HLA-B*07:02', 'HLA-C*07:02']
+})
 
 # Make predictions
 predictions, typing = predict(
     peptide_df=peptides,
-    selected_alleles=alleles
+    allele_df=alleles
 )
 ```
 

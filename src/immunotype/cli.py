@@ -2,12 +2,11 @@ import sys
 import warnings
 from pathlib import Path
 
-import pandas as pd
 import rich_click as click
 
-from .constants import __authors__, ASCII_BANNER, PREDICTION_MODELS
+from .constants import ASCII_BANNER, PREDICTION_MODELS, __authors__
 from .immunotype import predict
-from .utils import parse_peptide_input, parse_allele_input
+from .utils import parse_allele_input, parse_peptide_input
 
 # Import version from package
 try:
@@ -42,7 +41,7 @@ def show_banner():
     "This tool uses graph neural networks and lookup tables to predict HLA allele typing "
     "from immunopeptidomics data. Provide a peptide input file and optionally customize "
     "the HLA alleles to consider.",
-    epilog="For more information, visit: https://github.com/immunotype/immunotype",
+    epilog="For more information, visit: https://github.com/AG-Walz/immunotype",
 )
 @click.argument(
     "peptide_input",
@@ -67,10 +66,17 @@ def show_banner():
     show_default=True,
 )
 @click.option(
-    "--max-n-peptides",
+    "--max_n_peptides",
     default=50_000,
     type=int,
     help="Maximum number of peptides to predict at once.",
+    show_default=True,
+)
+@click.option(
+    "--batch_size",
+    default=1,
+    type=int,
+    help="How many samples should be predicted simultaneously.",
     show_default=True,
 )
 @click.option(
@@ -79,7 +85,13 @@ def show_banner():
     type=click.Choice(
         [model.lower() for model in PREDICTION_MODELS], case_sensitive=True
     ),
-    help="Disable the pre-trained GNN model.",
+    help="Select which model to use.",
+    show_default=True,
+)
+@click.option(
+    "--use_gpu",
+    is_flag=True,
+    help="Run prediction on GPU instead of CPU.",
     show_default=True,
 )
 @click.version_option(version=__version__, prog_name="immunotype")
@@ -89,7 +101,9 @@ def main(
     typing_output: Path,
     prob_output: Path,
     max_n_peptides: int,
+    batch_size: int,
     prediction_model: str,
+    use_gpu: bool,
 ):
     """
     Predict HLA typing from peptide sequences using immunotype.
@@ -132,6 +146,8 @@ def main(
             allele_df=allele_df,
             prediction_model=prediction_model,
             max_n_peptides=max_n_peptides,
+            batch_size=batch_size,
+            device="cuda" if use_gpu else "cpu",
         )
 
         # Show any warnings
