@@ -54,8 +54,8 @@ TOKENS = np.concatenate([SEQUENCE_TOKENS, AMINO_ACIDS, PLACEHOLDERS])
 TOKEN_VOCABULARY = dict(zip(TOKENS, range(1, len(TOKENS) + 1), strict=True))
 
 
-LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.55, "B": 0.4, "C": 0.325}
-ENSEMBLE_GNN_WEIGHTS = {"A": 0.5, "B": 0.5, "C": 0.9}
+LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.425, "B": 0.3, "C": 0.325}
+ENSEMBLE_GNN_WEIGHTS = {"A": 0.7, "B": 0.8, "C": 0.8}
 
 # MHC_SEQUENCE_DF stores the MHC sequences together with their identifier
 MHC_SEQUENCE_DF = pd.read_csv(PACKAGE_ROOT / "data" / "mhc_sequences.csv")
