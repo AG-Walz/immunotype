@@ -17,14 +17,6 @@ immunotype predicts HLA class I alleles directly from immunopeptidomics data —
 # Core CLI functionality
 pip install immunotype
 
-# With app interface (optional)
-pip install immunotype[app]
-
-# Development dependencies
-pip install immunotype[dev]
-
-# Everything
-pip install immunotype[all]
 ```
 
 ### Command Line Interface
@@ -48,8 +40,6 @@ pip install immunotype[all]
 │    --version                                  Show the version and exit.                                                                                                │
 │    --help                                     Show this message and exit.                                                                                               │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-
- For more information, visit: https://github.com/AG-Walz/immunotype
  ```
 
 ```bash
