@@ -1,8 +1,8 @@
-<img src="assets/immunotype_logo_dark_transparent.png" alt="immunotype logo" width="400">
+<img src="src/immunotype/assets/immunotype_logo_dark_transparent.png" alt="immunotype logo" width="400">
 
 **Peptide-based HLA typing from immunopeptidomics data**
 
-[![CI](https://github.com/immunotype/immunotype/workflows/CI/badge.svg)](https://github.com/immunotype/immunotype/actions?query=workflow%3ACI)
+[![CI](https://github.com/AG-Walz/immunotype/workflows/CI/badge.svg)](https://github.com/AG-Walz/immunotype/actions?query=workflow%3ACI)
 [![PyPI version](https://badge.fury.io/py/immunotype.svg)](https://badge.fury.io/py/immunotype)
 [![Python versions](https://img.shields.io/pypi/pyversions/immunotype.svg)](https://pypi.org/project/immunotype/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
