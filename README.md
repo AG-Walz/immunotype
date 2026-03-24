@@ -1,15 +1,4 @@
----
-title: immunotype
-emoji: 🧬
-colorFrom: purple
-colorTo: indigo
-sdk: gradio
-python_version: 3.10.0
-app_file: app.py
-license: mit
----
-
-# 🧬 immunotype
+<img src="assets/immunotype_logo_dark_transparent.png" alt="immunotype logo" width="400">
 
 **Peptide-based HLA typing from immunopeptidomics data**
 
@@ -18,8 +7,7 @@ license: mit
 [![Python versions](https://img.shields.io/pypi/pyversions/immunotype.svg)](https://pypi.org/project/immunotype/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Immunotype is a modern Python package for predicting HLA typing from peptide sequences using graph neural networks and lookup tables. It combines machine learning approaches with high-performance lookup methods to provide accurate and fast HLA allele predictions from immunopeptidomics data.
-
+immunotype predicts HLA class I alleles directly from immunopeptidomics data — no separate HLA typing experiment needed. immunotype combines a graph neural network with a curated mono-allelic lookup table in an ensemble model, achieving **87.2% accuracy** at protein-level resolution across diverse human tissues.
 
 ## 🚀 Quick Start
 
@@ -51,12 +39,12 @@ pip install immunotype[all]
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ *  PEPTIDE_INPUT       PATH                   TSV input file. Either a single column of peptides or two columns with sample IDs and peptides. [required]                │
 │ *  TYPING_OUTPUT       PATH                   Path to save the typing output. [required]                                                                                │
-│    --prob_output       PATH                   Save detailed HLA probabilities to specified TSV file.                                                                    │
+│    --prob-output       PATH                   Save detailed HLA probabilities to specified TSV file.                                                                    │
 │    --hla-input         PATH                   Path to the HLA input file containing alleles to consider. [default: <immunotype-package-path>/data/selected_alleles.csv] │
 │    --max-n-peptides    INTEGER                Maximum number of peptides to predict at once. [default: 50000]                                                           │
-│    --batch_size        INTEGER                How many samples should be predicted simultaneously. [default: 1]                                                         │
-│    --prediction_model  [ensemble|gnn|lookup]  Select which model to use. [default: ensemble]                                                                            │
-│    --use_gpu                                  Run prediction on GPU instead of CPU.                                                                                     │
+│    --batch-size        INTEGER                How many samples should be predicted simultaneously. [default: 1]                                                         │
+│    --prediction-model  [ensemble|gnn|lookup]  Select which model to use. [default: ensemble]                                                                            │
+│    --use-gpu                                  Run prediction on GPU instead of CPU.                                                                                     │
 │    --version                                  Show the version and exit.                                                                                                │
 │    --help                                     Show this message and exit.                                                                                               │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -66,13 +54,13 @@ pip install immunotype[all]
 
 ```bash
 # Basic prediction
-immunotype src/examples/single_sample_input.tsv test_single_sample_typing.tsv
+immunotype src/immunotype/examples/single_sample_input.tsv test_single_sample_typing.tsv
 
 # With probability details
-immunotype src/examples/single_sample_input.tsv test_single_sample_typing.tsv --out_probs test_single_sample_probabilities.tsv
+immunotype src/immunotype/examples/single_sample_input.tsv test_single_sample_typing.tsv --prob-output test_single_sample_probabilities.tsv
 
 # Custom settings
-immunotype src/examples/single_sample_input.tsv test_single_sample_typing.tsv --batch-size 100 --prediction_model gnn
+immunotype src/immunotype/examples/single_sample_input.tsv test_single_sample_typing.tsv --batch-size 100 --prediction-model gnn
 
 # Explore all CLI options
 immunotype --help
@@ -111,7 +99,7 @@ predictions, typing = predict(
 )
 ```
 
-## 📊 Input Formats
+## 📥 Input Formats
 
 **Single-column peptides:**
 ```
@@ -129,6 +117,21 @@ sample	peptide
 ```
 
 
+## 📤 Output
+
+**Typing (default):** Top 2 alleles per locus (A, B, C) per sample.
+```
+sample	typing
+sample_0	HLA-A*32:01;HLA-A*68:01;HLA-B*15:01;HLA-B*44:02;HLA-C*03:03;HLA-C*07:04
+```
+
+**Probabilities (`--prob-output`):** Per-allele scores from each prediction mode.
+```
+sample	locus	allele	probability_gnn	probability_lookup	probability
+sample_0	A	HLA-A*01:01	0.0005	0.0000	0.0003
+sample_0	A	HLA-A*02:01	0.0000	0.1945	0.0584
+```
+
 ## 📝 Authors
 
 - Matteo Pilz
@@ -142,6 +145,6 @@ sample	peptide
   title={immunotype: Peptide-based HLA typing from immunopeptidomics data},
   author={Pilz, Matteo and Scheid, Jonas},
   url={https://github.com/AG-Walz/immunotype},
-  year={2025}
+  year={2026}
 }
 ```

@@ -25,6 +25,10 @@ venv/
 # OS
 .DS_Store
 
+# Claude Code
+CLAUDE.md
+.claude/
+
 # Temporary output files
 *.log
 *.tmp
