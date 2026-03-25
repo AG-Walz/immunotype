@@ -10,29 +10,27 @@ Usage:
 """
 
 import base64
+import html
 import re
 import tempfile
 import warnings
-import html
-
 from pathlib import Path
 
 import gradio as gr
 import pandas as pd
 
-from immunotype.utils import parse_peptide_input, parse_allele_input
+from immunotype.constants import APP_HELP_SECTION, DECIMAL_PRECISION, PREDICTION_MODELS
 from immunotype.immunotype import predict
-from immunotype.constants import PREDICTION_MODELS, APP_HELP_SECTION
+from immunotype.utils import parse_allele_input, parse_peptide_input
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
 
-# number of decimals shown and in export
-DECIMAL_PRECISION = 4
-
 # Base64-encode logo for inline use (no file serving needed)
 _logo_path = PACKAGE_ROOT / "assets" / "immunotype_logo_dark_transparent.png"
-_logo_b64 = base64.b64encode(_logo_path.read_bytes()).decode() if _logo_path.exists() else ""
+_logo_b64 = (
+    base64.b64encode(_logo_path.read_bytes()).decode() if _logo_path.exists() else ""
+)
 
 theme = gr.themes.Base(
     primary_hue=gr.themes.colors.slate,
@@ -65,9 +63,9 @@ theme = gr.themes.Base(
 
 def _style_probabilities(df):
     """Apply consistent styling to probability DataFrame."""
-    return df.style.format(
-        precision=DECIMAL_PRECISION
-    ).background_gradient(cmap="YlGnBu", vmin=0, vmax=1)
+    return df.style.format(precision=DECIMAL_PRECISION).background_gradient(
+        cmap="YlGnBu", vmin=0, vmax=1
+    )
 
 
 def submit(
@@ -105,14 +103,16 @@ def submit(
     except Exception as e:
         raise gr.Error(html.escape(str(e)), duration=None)
 
-    samples = typing_df["sample"].astype(str).tolist()
-    sample_tag = re.sub(r'[^\w\-]', '_', "_".join(samples))[:100]
+    # samples = typing_df["sample"].astype(str).tolist()
+    # sample_tag = re.sub(r"[^\w\-]", "_", "_".join(samples))[:100]
     tmpdir = tempfile.gettempdir()
 
-    typing_path = Path(tmpdir) / f"{sample_tag}_typing.tsv"
+    # typing_path = Path(tmpdir) / f"{sample_tag}_typing.tsv"
+    typing_path = Path(tmpdir) / "typing_output.tsv"
     typing_df.to_csv(typing_path, index=False, sep="\t")
 
-    prob_path = Path(tmpdir) / f"{sample_tag}_probabilities.tsv"
+    # prob_path = Path(tmpdir) / f"{sample_tag}_probabilities.tsv"
+    prob_path = Path(tmpdir) / "probability_output.tsv"
     probability_df.to_csv(
         prob_path,
         index=False,
@@ -188,7 +188,7 @@ def create_interface():
                             lines=16,
                             max_lines=20,
                             value=example_peptides,
-                            placeholder="ALDGRETD\nSYFPEITHI\n...",
+                            placeholder="VLRGAIETY\nEENTLVQNY\n...",  # shown when input is empty
                         )
                         peptide_file_input = gr.File(label="Peptide file", height=140)
                         _ = gr.ClearButton([peptide_input, peptide_file_input])
@@ -266,9 +266,7 @@ def create_interface():
                             show_copy_button=True,
                         )
                     with gr.Row():
-                        typing_output = gr.File(
-                            label="Typing results", visible=False
-                        )
+                        typing_output = gr.File(label="Typing results", visible=False)
                         probability_output = gr.File(
                             label="Probability matrix", visible=False
                         )

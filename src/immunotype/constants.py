@@ -53,6 +53,8 @@ PLACEHOLDERS = np.array(["HLA-A*homozygous", "HLA-B*homozygous", "HLA-C*homozygo
 TOKENS = np.concatenate([SEQUENCE_TOKENS, AMINO_ACIDS, PLACEHOLDERS])
 TOKEN_VOCABULARY = dict(zip(TOKENS, range(1, len(TOKENS) + 1), strict=True))
 
+# number of decimals shown and in export
+DECIMAL_PRECISION = 4
 
 LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.425, "B": 0.3, "C": 0.325}
 ENSEMBLE_GNN_WEIGHTS = {"A": 0.7, "B": 0.8, "C": 0.8}

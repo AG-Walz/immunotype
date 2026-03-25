@@ -5,7 +5,7 @@ from pathlib import Path
 import rich_click as click
 import torch
 
-from .constants import ASCII_BANNER, PREDICTION_MODELS, __authors__
+from .constants import ASCII_BANNER, DECIMAL_PRECISION, PREDICTION_MODELS, __authors__
 from .immunotype import predict
 from .utils import parse_allele_input, parse_peptide_input
 
@@ -23,8 +23,6 @@ click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
-
-DECIMAL_PRECISION = 4
 
 
 def show_banner():
@@ -116,7 +114,9 @@ def main(
     show_banner()
 
     if use_gpu and not torch.cuda.is_available():
-        raise click.ClickException("--use-gpu was specified but no CUDA device is available.")
+        raise click.ClickException(
+            "--use-gpu was specified but no CUDA device is available."
+        )
 
     # Load and process peptide data
     with open(peptide_input, "r") as file:
