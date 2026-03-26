@@ -26,11 +26,11 @@ from immunotype.utils import parse_allele_input, parse_peptide_input
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
 
-# Base64-encode logo for inline use (no file serving needed)
-_logo_path = PACKAGE_ROOT / "assets" / "immunotype_logo_dark_transparent.png"
-_logo_b64 = (
-    base64.b64encode(_logo_path.read_bytes()).decode() if _logo_path.exists() else ""
-)
+# Base64-encode logos for inline use (no file serving needed)
+_logo_dark_path = PACKAGE_ROOT / "assets" / "immunotype_logo_dark_transparent.png"
+_logo_dark_b64 = base64.b64encode(_logo_dark_path.read_bytes()).decode() if _logo_dark_path.exists() else ""
+_logo_light_path = PACKAGE_ROOT / "assets" / "immunotype_logo_light_transparent.png"
+_logo_light_b64 = base64.b64encode(_logo_light_path.read_bytes()).decode() if _logo_light_path.exists() else ""
 
 theme = gr.themes.Base(
     primary_hue=gr.themes.colors.slate,
@@ -40,24 +40,10 @@ theme = gr.themes.Base(
     font_mono=[gr.themes.GoogleFont("JetBrains Mono"), "monospace"],
     radius_size=gr.themes.sizes.radius_sm,
 ).set(
-    body_background_fill="#151515",
-    body_text_color="#e0e0e0",
-    block_background_fill="#1e1e1e",
     block_border_width="1px",
-    block_border_color="#2e2e2e",
-    block_label_text_color="#a0a0a0",
     block_label_text_size="*text_md",
-    block_title_text_color="#e0e0e0",
     block_title_text_size="*text_md",
     block_shadow="none",
-    button_primary_background_fill="#e0e0e0",
-    button_primary_background_fill_hover="#ffffff",
-    button_primary_text_color="#151515",
-    input_background_fill="#252525",
-    input_border_color="#3a3a3a",
-    input_placeholder_color="#666666",
-    border_color_accent="#3a3a3a",
-    border_color_primary="#2e2e2e",
 )
 
 
@@ -166,12 +152,19 @@ example_alleles = "\n".join(
 
 def create_interface():
     """Create the Gradio interface."""
-    with gr.Blocks(title="immunotype", theme=theme) as app:
+    with gr.Blocks(
+        title="immunotype",
+        theme=theme,
+        css=".logo-dark { display: none; } .logo-light { display: inline; } "
+        ".dark .logo-dark { display: inline; } .dark .logo-light { display: none; }",
+    ) as app:
         gr.HTML(
             f"<div style='display: flex; align-items: center; gap: 16px; margin-bottom: 8px;'>"
-            f"<img src='data:image/png;base64,{_logo_b64}' "
+            f"<img class='logo-dark' src='data:image/png;base64,{_logo_dark_b64}' "
             f"style='height: 48px;' alt='immunotype'>"
-            f"<span style='color: #888888; font-size: 0.9rem;'>"
+            f"<img class='logo-light' src='data:image/png;base64,{_logo_light_b64}' "
+            f"style='height: 48px;' alt='immunotype'>"
+            f"<span style='color: var(--body-text-color-subdued); font-size: 0.9rem;'>"
             f"Peptide-based HLA typing from immunopeptidomics data</span>"
             f"</div>"
         )
