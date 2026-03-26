@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "immunotype"
-version = "1.0.0"
+version = "1.0.1"
 description = "Peptide-based HLA typing from immunopeptidomics data"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -40,7 +40,8 @@ dependencies = [
 
 [project.optional-dependencies]
 app = [
-    "gradio>=4.0.0"
+    "gradio>=4.0.0",
+    "matplotlib>=3.5.0"
 ]
 dev = [
     "pytest>=7.0.0",
