@@ -10,32 +10,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-    
+
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: "latest"
-    
-    - name: Install dependencies
-      run: |
-        uv pip install --system build twine
-    
+      uses: astral-sh/setup-uv@v5
+
     - name: Build package
-      run: |
-        uv build
-    
+      run: uv build
+
     - name: Check package
-      run: |
-        twine check dist/*
-    
+      run: uvx twine check dist/*
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -45,72 +32,47 @@ jobs:
   test-release:
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: dist
         path: dist/
-    
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: "3.11"
-    
+
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
-      with:
-        version: "latest"
-    
+      uses: astral-sh/setup-uv@v5
+
     - name: Test installation
       run: |
-        uv pip install dist/*.whl
-        uv run immunotype --help
+        uv venv test-env
+        VIRTUAL_ENV=test-env uv pip install dist/*.whl
+        VIRTUAL_ENV=test-env uv run immunotype --help
 
-  publish-test-pypi:
+  publish-pypi:
     runs-on: ubuntu-latest
     needs: [build, test-release]
-    if: github.event_name == 'release' && github.event.release.prerelease == true
+    if: github.event.release.prerelease == false
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/immunotype
+      name: pypi
+      url: https://pypi.org/p/immunotype
     permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
-    
+      id-token: write
+      attestations: write
+
     steps:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: dist
         path: dist/
-    
-    - name: Publish package distributions to TestPyPI
+
+    - name: Generate artifact attestations
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: dist/*
+
+    - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
-        repository-url: https://test.pypi.org/legacy/
-        packages-dir: dist/
-        verbose: true
-
-  #publish-pypi:
-  #  runs-on: ubuntu-latest
-  #  needs: [build, test-release]
-  #  if: github.event_name == 'release' && github.event.release.prerelease == false
-  #  environment: 
-  #    name: pypi
-  #    url: https://pypi.org/p/immunotype
-  #  permissions:
-  #    id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
-  #  
-  #  steps:
-  #  - name: Download build artifacts
-  #    uses: actions/download-artifact@v4
-  #    with:
-  #      name: dist
-  #      path: dist/
-  #  
-  #  - name: Publish package distributions to PyPI
-  #    uses: pypa/gh-action-pypi-publish@release/v1
-  #    with:
-  #      packages-dir: dist/
-  #      verbose: true
+        attestations: true

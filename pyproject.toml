@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "immunotype"
-version = "0.0.1"
+version = "1.0.0"
 description = "Peptide-based HLA typing from immunopeptidomics data"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -53,9 +53,9 @@ all = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/immunotype/immunotype"
-Repository = "https://github.com/immunotype/immunotype.git"
-Issues = "https://github.com/immunotype/immunotype/issues"
+Homepage = "https://github.com/AG-Walz/immunotype"
+Repository = "https://github.com/AG-Walz/immunotype.git"
+Issues = "https://github.com/AG-Walz/immunotype/issues"
 
 [project.scripts]
 immunotype = "immunotype.cli:main"

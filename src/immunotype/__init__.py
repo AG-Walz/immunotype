@@ -5,7 +5,7 @@ A modern Python package for predicting HLA typing from peptide sequences
 using graph neural networks and lookup tables.
 """
 
-__version__ = "0.0.1"
+__version__ = "1.0.0"
 
 from .immunotype import predict
 

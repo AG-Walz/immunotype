@@ -3,8 +3,9 @@ import warnings
 from pathlib import Path
 
 import rich_click as click
+import torch
 
-from .constants import ASCII_BANNER, PREDICTION_MODELS, __authors__
+from .constants import ASCII_BANNER, DECIMAL_PRECISION, PREDICTION_MODELS, __authors__
 from .immunotype import predict
 from .utils import parse_allele_input, parse_peptide_input
 
@@ -22,8 +23,6 @@ click.rich_click.GROUP_ARGUMENTS_OPTIONS = True
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
-
-DECIMAL_PRECISION = 4
 
 
 def show_banner():
@@ -54,7 +53,7 @@ def show_banner():
     help="Path to save the typing output.",
 )
 @click.option(
-    "--prob_output",
+    "--prob-output",
     type=click.Path(path_type=Path),
     help="Save detailed HLA probabilities to specified TSV file.",
 )
@@ -66,21 +65,21 @@ def show_banner():
     show_default=True,
 )
 @click.option(
-    "--max_n_peptides",
+    "--max-n-peptides",
     default=50_000,
     type=int,
     help="Maximum number of peptides to predict at once.",
     show_default=True,
 )
 @click.option(
-    "--batch_size",
+    "--batch-size",
     default=1,
     type=int,
     help="How many samples should be predicted simultaneously.",
     show_default=True,
 )
 @click.option(
-    "--prediction_model",
+    "--prediction-model",
     default="ensemble",
     type=click.Choice(
         [model.lower() for model in PREDICTION_MODELS], case_sensitive=True
@@ -89,10 +88,9 @@ def show_banner():
     show_default=True,
 )
 @click.option(
-    "--use_gpu",
+    "--use-gpu",
     is_flag=True,
     help="Run prediction on GPU instead of CPU.",
-    show_default=True,
 )
 @click.version_option(version=__version__, prog_name="immunotype")
 def main(
@@ -114,6 +112,11 @@ def main(
 
     # Show the ASCII banner
     show_banner()
+
+    if use_gpu and not torch.cuda.is_available():
+        raise click.ClickException(
+            "--use-gpu was specified but no CUDA device is available."
+        )
 
     # Load and process peptide data
     with open(peptide_input, "r") as file:
@@ -150,11 +153,10 @@ def main(
             device="cuda" if use_gpu else "cpu",
         )
 
-        # Show any warnings
-        click.secho("\n")
-        for warning in w:
-            click.secho(f"⚠️  {warning.message}", fg="yellow")
-        click.secho("\n")
+        if w:
+            click.echo()
+            for warning in w:
+                click.secho(f"⚠️  {warning.message}", fg="yellow")
 
     typing_df.to_csv(typing_output, sep="\t", index=False)
     click.secho(f"💾 Typing saved to {typing_output}", fg="green")

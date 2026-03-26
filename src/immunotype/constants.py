@@ -53,9 +53,11 @@ PLACEHOLDERS = np.array(["HLA-A*homozygous", "HLA-B*homozygous", "HLA-C*homozygo
 TOKENS = np.concatenate([SEQUENCE_TOKENS, AMINO_ACIDS, PLACEHOLDERS])
 TOKEN_VOCABULARY = dict(zip(TOKENS, range(1, len(TOKENS) + 1), strict=True))
 
+# number of decimals shown and in export
+DECIMAL_PRECISION = 4
 
-LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.55, "B": 0.4, "C": 0.325}
-ENSEMBLE_GNN_WEIGHTS = {"A": 0.5, "B": 0.5, "C": 0.9}
+LOOKUP_HOMOZYGOUS_THRESHOLDS = {"A": 0.425, "B": 0.3, "C": 0.325}
+ENSEMBLE_GNN_WEIGHTS = {"A": 0.7, "B": 0.8, "C": 0.8}
 
 # MHC_SEQUENCE_DF stores the MHC sequences together with their identifier
 MHC_SEQUENCE_DF = pd.read_csv(PACKAGE_ROOT / "data" / "mhc_sequences.csv")
@@ -66,40 +68,30 @@ LOOKUP_DF = pd.read_csv(PACKAGE_ROOT / "data" / "lookup_db.csv")
 PREDICTION_MODELS = ["Ensemble", "GNN", "Lookup"]
 
 APP_HELP_SECTION = """
-## 📚 Tutorial and Resources
+## Documentation
 
 ### Usage
-1. **Peptides input**: Enter peptide sequences separated by newlines, or upload a file.
-2. **Submit**: Click submit to run the prediction.
-3. **View results**: See predicted typing and download detailed probabilities.
+1. Enter peptide sequences (one per line) or upload a TSV file.
+2. Click **Run prediction**.
+3. View results in the **Typing** table; download the full probability matrix as TSV.
 
 ### Input Formats
-#### Peptides
-- **One sample**: One peptide sequence per line (e.g., `ALDGRETD`).
-- **Multiple samples**: Header with sample & peptide, then sample id and peptide sequence.
-- **HLA alleles**: One allele per line (e.g., HLA-A*24-27).
-- **Files**: TSV/CSV files with either peptide sequences only or with: sample, peptide as columns.
+- **Single sample**: One peptide sequence per line (e.g., `ALDGRETD`).
+- **Multiple samples**: TSV with `sample` and `peptide` columns.
+- **HLA alleles**: One allele per line (e.g., `HLA-A*24:27`).
 
 ### Output
 - **Typing**: Predicted HLA alleles for your sample.
 - **Probabilities**: Detailed probability scores for all tested alleles.
-- **TSV Download**: Full results table for further analysis.
 
-### Additional Settings
-- **Select which model to use**: You can choose between ensemble or GNN and lookup only.
-- **HLA allele input**: Choose the alleles included in the prediction (it is not recommended to change this, see below).¹
-- **Maximum number of peptides**: Change the maximum number of peptides that should be predicted simultaneously.²
-- **Batch size**: Number of samples that should be predicted simultaneously.³
-- **Use GPU**: Run prediction on GPU, will throw a warning if activated and no GPU is available.
+### Advanced Settings
+- **Prediction model**: Ensemble (GNN + lookup), or either alone.
+- **HLA alleles**: Alleles included in prediction. Changing this is not recommended as it may reduce accuracy.
+- **Max peptides per batch**: Should be as high as memory allows. Combined with batch size, controls memory usage (especially on GPU).
+- **Batch size**: Increasing batch size generally speeds up CPU prediction. On GPU, keep it lower.
+- **Use GPU**: Run prediction on GPU instead of CPU.
 
-### Remarks
-¹ It is not recommended to change the selected alleles, as there is a high probability it will influence the prediction accuracy.\n
-² The maximum number of peptides should be as high as possible and ideally larger than the number of peptides in each sample.
-Together with the batch size, this setting can be used to prevent memory overflow, especially on GPU.\n
-³ In most cases and especially on CPU, the batch size can be increased to speed up the prediction.
-When running on GPU, it is advised to keep the batch size lower.\n
-\n
-Maximum number of peptides, batch size and usage of GPU do not affect a lookup only prediction.
+Max peptides, batch size, and GPU settings do not affect lookup-only predictions.
 
 ### Citation
 If you use immunotype in your research, please cite TODO.
