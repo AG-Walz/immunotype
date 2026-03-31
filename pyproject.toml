@@ -40,7 +40,7 @@ dependencies = [
 
 [project.optional-dependencies]
 app = [
-    "gradio>=4.0.0",
+    "gradio>=6.0.0",
     "matplotlib>=3.5.0"
 ]
 dev = [

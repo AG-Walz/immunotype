@@ -154,9 +154,6 @@ def create_interface():
     """Create the Gradio interface."""
     with gr.Blocks(
         title="immunotype",
-        theme=theme,
-        css=".logo-dark { display: none; } .logo-light { display: inline; } "
-        ".dark .logo-dark { display: inline; } .dark .logo-light { display: none; }",
     ) as app:
         gr.HTML(
             f"<div style='display: flex; align-items: center; gap: 16px; margin-bottom: 8px;'>"
@@ -239,8 +236,8 @@ def create_interface():
                             headers=["sample", "typing"],
                             datatype=["str", "str"],
                             row_count=1,
-                            col_count=(2, "fixed"),
-                            show_copy_button=True,
+                            column_count=(2, "fixed"),
+                            buttons=["copy"],
                             label="Typing",
                         )
                     with gr.Group():
@@ -255,8 +252,8 @@ def create_interface():
                             datatype=["str", "str", "number", "str"],
                             row_count=1,
                             label="Typing probabilities",
-                            col_count=(4, "fixed"),
-                            show_copy_button=True,
+                            column_count=(4, "fixed"),
+                            buttons=["copy"],
                         )
                     with gr.Row():
                         typing_output = gr.File(label="Typing results", visible=False)
@@ -302,7 +299,11 @@ def create_interface():
 # Main function to launch the app via CLI
 def main():
     app = create_interface()
-    app.launch()
+    app.launch(
+        theme=theme,
+        css=".logo-dark { display: none; } .logo-light { display: inline; } "
+        ".dark .logo-dark { display: inline; } .dark .logo-light { display: none; }",
+    )
 
 
 # For direct execution of the app interface
