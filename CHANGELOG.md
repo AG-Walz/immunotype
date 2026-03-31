@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.2]
 
 ### Changed
-- Bump gradio dependency to `>=5.0.0`
+- Bump gradio dependency to `>=6.0.0`, use `buttons` API for Dataframe copy button
 
 ## [1.0.1]
 
