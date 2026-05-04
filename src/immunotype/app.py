@@ -254,8 +254,8 @@ def create_interface():
                         )
                     with gr.Group():
                         col_selector = gr.Dropdown(
-                            choices=["allele", "probability"],
-                            value="allele",
+                            choices=["probability", "allele"],
+                            value="probability",
                             label="Sort by",
                             scale=1,
                             min_width=160,
