@@ -19,18 +19,26 @@ from pathlib import Path
 import gradio as gr
 import pandas as pd
 
-from immunotype.constants import APP_HELP_SECTION, DECIMAL_PRECISION, PREDICTION_MODELS
-from immunotype.immunotype import predict
-from immunotype.utils import parse_allele_input, parse_peptide_input
+from .constants import APP_HELP_SECTION, DECIMAL_PRECISION, PREDICTION_MODELS
+from .immunotype import predict
+from .utils import parse_allele_input, parse_peptide_input
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
 
 # Base64-encode logos for inline use (no file serving needed)
 _logo_dark_path = PACKAGE_ROOT / "assets" / "immunotype_logo_dark_transparent.png"
-_logo_dark_b64 = base64.b64encode(_logo_dark_path.read_bytes()).decode() if _logo_dark_path.exists() else ""
+_logo_dark_b64 = (
+    base64.b64encode(_logo_dark_path.read_bytes()).decode()
+    if _logo_dark_path.exists()
+    else ""
+)
 _logo_light_path = PACKAGE_ROOT / "assets" / "immunotype_logo_light_transparent.png"
-_logo_light_b64 = base64.b64encode(_logo_light_path.read_bytes()).decode() if _logo_light_path.exists() else ""
+_logo_light_b64 = (
+    base64.b64encode(_logo_light_path.read_bytes()).decode()
+    if _logo_light_path.exists()
+    else ""
+)
 
 theme = gr.themes.Base(
     primary_hue=gr.themes.colors.slate,
@@ -116,11 +124,15 @@ def submit(
 
 
 def sort_table(col: str, probability_df: pd.DataFrame):
-    """Sort the table by col."""
+    """Sort the table by sample, then by the selected column."""
     if probability_df is None or probability_df.empty:
         return gr.Dataframe(), probability_df
+
+    # Determine ascending for the secondary sort
+    ascending = col != "probability"
+
     probability_df = probability_df.sort_values(
-        by=col, ascending=(col != "probability")
+        by=["sample", col], ascending=[True, ascending]
     )
     return _style_probabilities(probability_df), probability_df
 
@@ -242,7 +254,8 @@ def create_interface():
                         )
                     with gr.Group():
                         col_selector = gr.Dropdown(
-                            choices=["sample", "allele", "probability"],
+                            choices=["probability", "allele"],
+                            value="probability",
                             label="Sort by",
                             scale=1,
                             min_width=160,
@@ -278,6 +291,10 @@ def create_interface():
                     probability_output,
                     prob_state,
                 ],
+            ).then(
+                sort_table,
+                inputs=[col_selector, prob_state],
+                outputs=[typing_probabilities, prob_state],
             )
             peptide_file_input.upload(
                 update_peptide_input, inputs=peptide_file_input, outputs=peptide_input
