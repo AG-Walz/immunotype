@@ -94,5 +94,9 @@ APP_HELP_SECTION = """
 Max peptides, batch size, and GPU settings do not affect lookup-only predictions.
 
 ### Citation
-If you use immunotype in your research, please cite TODO.
+If you use immunotype in your research, please cite our preprint:
+
+> Pilz M, Scheid J, Bauer A, Lemke S, Sachsenberg T, Bauer J, Nelde A, Stadelmaier J, Walter A, Rammensee H-G, Nahnsen S, Kohlbacher O, Walz JS.
+> **Deep learning enables direct HLA typing from immunopeptidomics data.** *bioRxiv* (2026).
+> [doi:10.64898/2026.04.08.717021](https://doi.org/10.64898/2026.04.08.717021)
 """
