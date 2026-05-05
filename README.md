@@ -130,11 +130,19 @@ sample_0	A	HLA-A*02:01	0.0000	0.1945	0.0584
 
 ## 📚 Citation
 
+If you use immunotype in your research, please cite our preprint:
+
+> Pilz M, Scheid J, Bauer A, Lemke S, Sachsenberg T, Bauer J, Nelde A, Stadelmaier J, Walter A, Rammensee H-G, Nahnsen S, Kohlbacher O, Walz JS.
+> **Deep learning enables direct HLA typing from immunopeptidomics data.** *bioRxiv* (2026).
+> [doi:10.64898/2026.04.08.717021](https://doi.org/10.64898/2026.04.08.717021)
+
 ```bibtex
-@software{immunotype,
-  title={immunotype: Peptide-based HLA typing from immunopeptidomics data},
-  author={Pilz, Matteo and Scheid, Jonas},
-  url={https://github.com/AG-Walz/immunotype},
-  year={2026}
+@article{immunotype,
+  title   = {Deep learning enables direct HLA typing from immunopeptidomics data},
+  author  = {Pilz, Matteo and Scheid, Jonas and Bauer, Alina and Lemke, Steffen and Sachsenberg, Timo and Bauer, Jens and Nelde, Annika and Stadelmaier, Josua and Walter, Axel and Rammensee, Hans-Georg and Nahnsen, Sven and Kohlbacher, Oliver and Walz, Juliane Sarah},
+  journal = {bioRxiv},
+  year    = {2026},
+  doi     = {10.64898/2026.04.08.717021},
+  url     = {https://doi.org/10.64898/2026.04.08.717021}
 }
 ```
