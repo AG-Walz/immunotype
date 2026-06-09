@@ -5,6 +5,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.4]
+
 ### Changed
 - Added bioRxiv preprint citation in README and Gradio app help tab ([doi:10.64898/2026.04.08.717021](https://doi.org/10.64898/2026.04.08.717021)) ([#18](https://github.com/AG-Walz/immunotype/pull/18))
 
