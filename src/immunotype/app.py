@@ -168,6 +168,16 @@ def create_interface():
         title="immunotype",
     ) as app:
         gr.HTML(
+            # Theme-aware logo swap. The CSS lives inline here (not in the
+            # launch() css= argument) so it travels with the component and
+            # applies regardless of how the app is launched (CLI, HF Space,
+            # programmatic). Otherwise both logos render at once.
+            "<style>"
+            ".logo-dark { display: none !important; }"
+            ".logo-light { display: inline-block !important; }"
+            ".dark .logo-dark { display: inline-block !important; }"
+            ".dark .logo-light { display: none !important; }"
+            "</style>"
             f"<div style='display: flex; align-items: center; gap: 16px; margin-bottom: 8px;'>"
             f"<img class='logo-dark' src='data:image/png;base64,{_logo_dark_b64}' "
             f"style='height: 48px;' alt='immunotype'>"
@@ -316,11 +326,7 @@ def create_interface():
 # Main function to launch the app via CLI
 def main():
     app = create_interface()
-    app.launch(
-        theme=theme,
-        css=".logo-dark { display: none; } .logo-light { display: inline; } "
-        ".dark .logo-dark { display: inline; } .dark .logo-light { display: none; }",
-    )
+    app.launch(theme=theme)
 
 
 # For direct execution of the app interface
