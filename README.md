@@ -6,6 +6,7 @@
 [![PyPI version](https://badge.fury.io/py/immunotype.svg)](https://badge.fury.io/py/immunotype)
 [![Python versions](https://img.shields.io/pypi/pyversions/immunotype.svg)](https://pypi.org/project/immunotype/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Space-FFD21E?logo=huggingface&logoColor=000)](https://huggingface.co/spaces/immunotype/immunotype)
 
 immunotype predicts HLA class I alleles directly from immunopeptidomics data — no separate HLA typing experiment needed. immunotype combines a graph neural network with a curated mono-allelic lookup table in an ensemble model, achieving **87.2% accuracy** at protein-level resolution across diverse human tissues.
 
@@ -57,6 +58,8 @@ immunotype --help
 ```
 
 ### App Interface
+
+Try it online without installing — the hosted app on [Hugging Face Spaces](https://huggingface.co/spaces/immunotype/immunotype). Or run it locally:
 
 ```bash
 # Install with app dependencies
