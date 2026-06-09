@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Added bioRxiv preprint citation in README and Gradio app help tab ([doi:10.64898/2026.04.08.717021](https://doi.org/10.64898/2026.04.08.717021)) ([#18](https://github.com/AG-Walz/immunotype/pull/18))
 
+### Fixed
+- Gradio app showed both light and dark logos at once when not launched via the CLI (e.g. on HF Space) ([#19](https://github.com/AG-Walz/immunotype/pull/19))
+
 ## [1.0.3]
 
 ### Fixed
