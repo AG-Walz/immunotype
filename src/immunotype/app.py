@@ -227,7 +227,7 @@ def create_interface():
                         n_peptides_slider = gr.Slider(
                             1_000,
                             100_000,
-                            value=50_000,
+                            value=10_000,
                             step=1_000,
                             interactive=True,
                             label="Max peptides per batch",
