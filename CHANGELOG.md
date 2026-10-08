@@ -5,6 +5,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Gradio app ran out of memory on HF Space for large inputs; lowered max peptides per batch default to 10,000 ([#21](https://github.com/AG-Walz/immunotype/pull/21))
+
 ## [1.0.4]
 
 ### Changed
