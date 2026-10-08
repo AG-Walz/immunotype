@@ -3,7 +3,7 @@
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.5]
 
 ### Fixed
 - Gradio app ran out of memory on HF Space for large inputs; lowered max peptides per batch default to 10,000 ([#21](https://github.com/AG-Walz/immunotype/pull/21))
