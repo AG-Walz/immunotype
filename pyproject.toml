@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -8,16 +8,18 @@ version = "1.0.5"
 description = "Peptide-based HLA typing from immunopeptidomics data"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {file = "LICENSE"}
+license = "AGPL-3.0-or-later AND CC-BY-4.0"
+license-files = ["LICENSE", "LICENSE-DATA"]
 authors = [
     {name = "Matteo Pilz"},
-    {name = "Jonas Scheid"}
+    {name = "Jonas Scheid"},
+    {name = "Oliver Kohlbacher"},
+    {name = "Juliane Walz"}
 ]
 keywords = ["immunopeptidomics", "HLA", "typing", "peptides", "machine learning", "bioinformatics"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -72,6 +74,7 @@ include = [
     "/tests",
     "/README.md",
     "/LICENSE",
+    "/LICENSE-DATA",
     "/pyproject.toml"
 ]
 

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Changed the code license from MIT to AGPL-3.0-or-later, following the [Open Science Policy of the University of Tübingen](https://uni-tuebingen.de/universitaet/profil/werte-und-visionen/open-science-an-der-universitaet-tuebingen/open-science-policy/)
+- Licensed data files and model weights under CC BY 4.0 (`LICENSE-DATA`)
+- Added Oliver Kohlbacher and Juliane Walz as authors
 - Updated GitHub Actions to Node.js 24 versions ([#22](https://github.com/AG-Walz/immunotype/pull/22))
 
 ## [1.0.5]

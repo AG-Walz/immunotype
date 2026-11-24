@@ -5,7 +5,8 @@
 [![CI](https://github.com/AG-Walz/immunotype/workflows/CI/badge.svg)](https://github.com/AG-Walz/immunotype/actions?query=workflow%3ACI)
 [![PyPI version](https://badge.fury.io/py/immunotype.svg)](https://badge.fury.io/py/immunotype)
 [![Python versions](https://img.shields.io/pypi/pyversions/immunotype.svg)](https://pypi.org/project/immunotype/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Data License: CC BY 4.0](https://img.shields.io/badge/Data_License-CC_BY_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by/4.0/)
 [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-Space-FFD21E?logo=huggingface&logoColor=000)](https://huggingface.co/spaces/immunotype/immunotype)
 
 immunotype predicts HLA class I alleles directly from immunopeptidomics data — no separate HLA typing experiment needed. immunotype combines a graph neural network with a curated mono-allelic lookup table in an ensemble model, achieving **87.2% accuracy** at protein-level resolution across diverse human tissues.
@@ -129,6 +130,8 @@ sample_0	A	HLA-A*02:01	0.0000	0.1945	0.0584
 
 - Matteo Pilz
 - Jonas Scheid
+- Oliver Kohlbacher
+- Juliane Walz
 
 
 ## 📚 Citation
@@ -149,3 +152,12 @@ If you use immunotype in your research, please cite our preprint:
   url     = {https://doi.org/10.64898/2026.04.08.717021}
 }
 ```
+
+## ⚖️ License
+
+Copyright (C) 2024-2026 AG-Walz
+
+- **Code:** [GNU Affero General Public License v3.0 or later](LICENSE) (`AGPL-3.0-or-later`).
+- **Data and model weights** (`src/immunotype/data/`, `src/immunotype/weights/`, `src/immunotype/examples/`): [Creative Commons Attribution 4.0 International](LICENSE-DATA) (`CC-BY-4.0`).
+
+Versions up to 1.0.5 were released under the MIT License.
