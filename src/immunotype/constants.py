@@ -12,7 +12,7 @@ ASCII_BANNER = """    _                                       __
                                             ╱____╱_╱           """
 
 # Authors information
-__authors__ = ["Matteo Pilz", "Jonas Scheid"]
+__authors__ = ["Matteo Pilz", "Jonas Scheid", "Oliver Kohlbacher", "Juliane Walz"]
 
 # Get package root directory
 PACKAGE_ROOT = Path(__file__).parent
@@ -99,4 +99,8 @@ If you use immunotype in your research, please cite our preprint:
 > Pilz M, Scheid J, Bauer A, Lemke S, Sachsenberg T, Bauer J, Nelde A, Stadelmaier J, Walter A, Rammensee H-G, Nahnsen S, Kohlbacher O, Walz JS.
 > **Deep learning enables direct HLA typing from immunopeptidomics data.** *bioRxiv* (2026).
 > [doi:10.64898/2026.04.08.717021](https://doi.org/10.64898/2026.04.08.717021)
+
+### Source Code and License
+The source code is available at [github.com/AG-Walz/immunotype](https://github.com/AG-Walz/immunotype).
+The code uses the AGPL-3.0-or-later license. The data files and model weights use the CC BY 4.0 license.
 """
