@@ -159,5 +159,3 @@ Copyright (C) 2024-2026 AG-Walz
 
 - **Code:** [GNU Affero General Public License v3.0 or later](LICENSE) (`AGPL-3.0-or-later`).
 - **Data and model weights** (`src/immunotype/data/`, `src/immunotype/weights/`, `src/immunotype/examples/`): [Creative Commons Attribution 4.0 International](LICENSE-DATA) (`CC-BY-4.0`).
-
-Versions up to 1.0.5 were released under the MIT License.
